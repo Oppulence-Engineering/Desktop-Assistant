@@ -13,22 +13,24 @@ import { Label } from "@oppulence/ui/components/label";
 
 import {
   getDeleteConnectionUrl,
-  getListConnectorsUrl,
   getSetConnectionAPIKeyUrl,
 } from "@/lib/api/generated/client/connectors/connectors";
+import { useQueryClient } from "@tanstack/react-query";
+import { useConnectors } from "@/hooks/queries/use-connectors";
+import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
+import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
+import { connectorKeys } from "@/hooks/queries/utils/connector-keys";
+import { googleOauthKeys } from "@/hooks/queries/utils/google-oauth-keys";
 import type {
   Connector,
   ConnectorScope,
   GoogleConnectionStatus,
 } from "@/lib/api/generated/client/model";
-import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
 import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
 import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler";
-import { listRelationshipSourceStatuses } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections";
-import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
   hostedOAuthUnsupportedReason,
@@ -145,32 +147,22 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
 }
 
 function GoogleConnectionSettings() {
-  const [status, setStatus] = React.useState<GoogleConnectionStatus | null>(null);
-  const [sourceStatus, setSourceStatus] = React.useState<string | undefined>(undefined);
+  const queryClient = useQueryClient();
+  const statusQuery = useGoogleConnectionStatus();
+  const sourcesQuery = useRelationshipSourceStatuses();
+  const status = statusQuery.data ?? null;
+  const sourceStatus = sourcesQuery.data?.find((entry) => entry.source === "google")?.status;
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const loadStatus = React.useCallback(async () => {
-    const response = await dashboardFetch("/api/rowboat/v1/google-oauth");
-    if (!response.ok) throw new Error(`Could not load Google status (${response.status})`);
-    const parsed = GetGoogleConnectionStatus200Response.parse(await response.json());
-    setStatus(parsed);
-    // Health, not existence. A row in the OAuth table only says the user once
-    // authorized; the source status says whether the grant still works.
-    try {
-      const sources = await listRelationshipSourceStatuses();
-      setSourceStatus(sources.find((entry) => entry.source === "google")?.status);
-    } catch {
-      // Health is additive: if it cannot be read the card still renders the
-      // connect/reconnect action, it just cannot promise the grant is good.
-      setSourceStatus(undefined);
-    }
-    return parsed;
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: googleOauthKeys.status() });
+    return queryClient.getQueryData(googleOauthKeys.status());
+  }, [queryClient]);
 
   React.useEffect(() => {
-    loadStatus().catch(() => setError("Could not load Google connection status."));
-  }, [loadStatus]);
+    if (statusQuery.error) setError("Could not load Google connection status.");
+  }, [statusQuery.error]);
 
   React.useEffect(() => {
     const refresh = () => void loadStatus();
@@ -501,9 +493,10 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
 }
 
 export function ConnectorSettings({ showHeading = true }: { showHeading?: boolean }) {
-  const [connectors, setConnectors] = React.useState<Connector[]>([]);
-  const [state, setState] = React.useState<"loading" | "ready" | "error">("loading");
-  const [refreshKey, setRefreshKey] = React.useState(0);
+  const queryClient = useQueryClient();
+  const connectorsQuery = useConnectors();
+  const connectors = connectorsQuery.data ?? [];
+  const state = connectorsQuery.isPending ? "loading" : connectorsQuery.isError ? "error" : "ready";
   const [notice, setNotice] = React.useState<{ outcome: HostedOAuthOutcome; connector?: string }>();
   const [composioSlugs, setComposioSlugs] = React.useState<string[]>([]);
   // A disabled native card next to a working Composio row is the same product
@@ -511,6 +504,9 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
   const visibleConnectors = connectors.filter(
     (connector) => connector.status === "enabled" || !composioSlugs.includes(connector.name),
   );
+  const refreshConnectors = React.useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: connectorKeys.list() });
+  }, [queryClient]);
 
   React.useEffect(() => {
     const parameters = new URLSearchParams(window.location.search);
@@ -518,7 +514,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
     const connector = parameters.get("connector") || undefined;
     if (outcome && outcome in OUTCOME_MESSAGES) {
       setNotice({ outcome, connector });
-      if (outcome === "active") setRefreshKey((key) => key + 1);
+      if (outcome === "active") refreshConnectors();
       parameters.delete("connector_oauth");
       parameters.delete("connector");
       window.history.replaceState(
@@ -527,27 +523,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
         `${window.location.pathname}${parameters.size ? `?${parameters.toString()}` : ""}${window.location.hash}`,
       );
     }
-  }, []);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    dashboardFetch(`${proxyPath(getListConnectorsUrl())}?r=${refreshKey}`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Could not load connectors (${response.status})`);
-        return parseConnectorsResponse(JSON.parse(await response.text()));
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setConnectors(data.connectors);
-        setState("ready");
-      })
-      .catch(() => {
-        if (!cancelled) setState("error");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
+  }, [refreshConnectors]);
 
   return (
     <section className="settings-section-block" data-slot="connector-settings">
@@ -583,7 +559,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
               <ConnectorRow
                 connector={connector}
                 key={connector.name}
-                onChanged={() => setRefreshKey((key) => key + 1)}
+                onChanged={refreshConnectors}
               />
             ))}
           </div>

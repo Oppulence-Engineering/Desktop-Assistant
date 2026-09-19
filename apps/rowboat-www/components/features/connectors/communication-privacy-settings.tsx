@@ -9,17 +9,25 @@ import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useCommunicationPolicy,
+  useCommunicationPrivacyRules,
+} from "@/hooks/queries/use-communication";
+import { communicationKeys } from "@/hooks/queries/utils/communication-keys";
 import {
   createCommunicationPrivacyRule,
   deleteCommunicationPrivacyRule,
-  getCommunicationPolicy,
-  listCommunicationPrivacyRules,
   putCommunicationPolicy,
 } from "@/lib/revenue";
 import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/types/revenue";
 
 export function CommunicationPrivacySettings() {
+  const queryClient = useQueryClient();
   const [accountId, setAccountId] = React.useState("");
+  const trimmedAccountId = accountId.trim();
+  const policyQuery = useCommunicationPolicy(trimmedAccountId);
+  const rulesQuery = useCommunicationPrivacyRules(trimmedAccountId.length > 0);
   const [policy, setPolicy] = React.useState<CommunicationPolicy | null>(null);
   const [rules, setRules] = React.useState<CommunicationPrivacyRule[]>([]);
   const [ruleKind, setRuleKind] = React.useState("protected_address");
@@ -27,22 +35,28 @@ export function CommunicationPrivacySettings() {
   const [status, setStatus] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  const refresh = React.useCallback(async (sourceAccountId: string) => {
-    if (!sourceAccountId.trim()) return;
-    const [nextPolicy, nextRules] = await Promise.all([
-      getCommunicationPolicy(sourceAccountId.trim()),
-      listCommunicationPrivacyRules(),
-    ]);
-    setPolicy(nextPolicy);
-    setRules(nextRules);
-  }, []);
+  React.useEffect(() => {
+    if (policyQuery.data) setPolicy(policyQuery.data);
+  }, [policyQuery.data]);
 
   React.useEffect(() => {
-    if (!accountId.trim()) return;
-    void refresh(accountId).catch((error: unknown) => {
+    if (rulesQuery.data) setRules(rulesQuery.data);
+  }, [rulesQuery.data]);
+
+  React.useEffect(() => {
+    if (policyQuery.error || rulesQuery.error) {
+      const error = policyQuery.error || rulesQuery.error;
       setStatus(error instanceof Error ? error.message : "Could not load mailbox policy.");
-    });
-  }, [accountId, refresh]);
+    }
+  }, [policyQuery.error, rulesQuery.error]);
+
+  const refresh = React.useCallback(async () => {
+    if (!trimmedAccountId) return;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: communicationKeys.policy(trimmedAccountId) }),
+      queryClient.invalidateQueries({ queryKey: communicationKeys.rules() }),
+    ]);
+  }, [queryClient, trimmedAccountId]);
 
   async function savePolicy() {
     if (!policy || !accountId.trim()) return;
@@ -66,7 +80,7 @@ export function CommunicationPrivacySettings() {
     try {
       await createCommunicationPrivacyRule({ kind: ruleKind, value: ruleValue.trim() });
       setRuleValue("");
-      await refresh(accountId);
+      await refresh();
       setStatus("Privacy rule added.");
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Could not add privacy rule.");
@@ -192,9 +206,7 @@ export function CommunicationPrivacySettings() {
               </span>
               <Button
                 disabled={busy}
-                onClick={() =>
-                  void deleteCommunicationPrivacyRule(rule.id).then(() => refresh(accountId))
-                }
+                onClick={() => void deleteCommunicationPrivacyRule(rule.id).then(() => refresh())}
                 type="button"
                 variant="ghost"
               >

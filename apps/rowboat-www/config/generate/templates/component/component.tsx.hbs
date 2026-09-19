@@ -1,0 +1,27 @@
+{{#if client}}"use client";
+
+import "client-only";
+
+{{/if}}import type { ComponentPropsWithoutRef } from "react";
+
+import { cn } from "@oppulence/ui/lib/utils";
+
+import { type {{fieldsTypeName}} } from "./{{name}}.schema";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * {{pascalName}} is a {{#if client}}client{{else}}server{{/if}} presentation component.
+ * {{summary}}
+ *
+ * Data and callbacks arrive through validated props. This module does not fetch,
+ * persist, or read cookies. Owned by `{{name}}.lit.ts`.
+ */
+export type {{typeName}} = {{fieldsTypeName}} & ComponentPropsWithoutRef<"section">;
+
+export function {{pascalName}}({ className, ...props }: {{typeName}}) {
+  return (
+    <section data-slot="{{name}}" className={cn(className)} {...props}>
+      {/* implementation */}
+    </section>
+  );
+}

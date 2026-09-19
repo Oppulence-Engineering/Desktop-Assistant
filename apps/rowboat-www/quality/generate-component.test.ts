@@ -25,7 +25,7 @@ async function temporaryRoot(): Promise<string> {
 }
 
 describe("component generator", () => {
-  it("creates a server-first feature component and colocated behavior test", async () => {
+  it("creates a server-first feature component with Zod props, lit, test, and story", async () => {
     const root = await temporaryRoot();
     const files = await generateComponent({
       kind: "feature",
@@ -37,12 +37,23 @@ describe("component generator", () => {
     expect(files.map((file) => path.relative(root, file.path))).toEqual([
       "components/features/agents/agent-card/agent-card.tsx",
       "components/features/agents/agent-card/agent-card.test.tsx",
+      "components/features/agents/agent-card/agent-card.schema.ts",
+      "components/features/agents/agent-card/agent-card.schema.test.ts",
+      "components/features/agents/agent-card/agent-card.lit.ts",
+      "components/features/agents/agent-card/agent-card.stories.tsx",
     ]);
     const component = await readFile(files[0].path, "utf8");
     const test = await readFile(files[1].path, "utf8");
+    const schema = await readFile(files[2].path, "utf8");
+    const lit = await readFile(files[4].path, "utf8");
     expect(component).not.toContain('"use client"');
     expect(component).toContain("export type AgentCardProps");
+    expect(component).toContain("AgentCardPropsFields");
     expect(component).toContain('data-slot="agent-card"');
+    expect(component).toContain("Owned by");
+    expect(schema).toContain("export const AgentCardPropsSchema");
+    expect(schema).toContain("z.infer<typeof AgentCardPropsSchema>");
+    expect(lit).toContain("AgentCardLitSchema");
     expect(test).toContain("@testing-library/react");
     expect(test).toContain('getByRole("region"');
   });

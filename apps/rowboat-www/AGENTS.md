@@ -71,7 +71,11 @@ do not call protected Go API endpoints directly from Client Components.
   MSW mocks from the Go OpenAPI contract into `lib/api/generated`.
 - Some older clients still rely on TypeScript casts after parsing JSON; their
   exact migration seams are recorded in `eslint.config.mjs`.
-- Live product behavior uses SSE, polling, and effect-driven client requests.
+- Live product behavior uses SSE, polling, and TanStack Query. New remote
+  reads and writes are scaffolded with `gen hook` / `gen mutation` (prefer
+  `--operation`). Fetchers call `requestJson` with an Orval Zod schema from
+  `lib/api/generated/zod`. Do not enable Orval `client: "react-query"` and do
+  not add tRPC — the BFF plus Go OpenAPI is the compiler.
 - Independent requests are generally parallelized with `Promise.all`.
 - Chat transcripts are organization/user-scoped and memory-only. Non-sensitive
   browser preferences can use `lib/storage/scoped-storage.ts`, which adds
@@ -80,9 +84,14 @@ do not call protected Go API endpoints directly from Client Components.
 ### UI and styling
 
 - Tailwind CSS is the primary styling mechanism.
-- Shared primitives come from `@oppulence/ui` and Radix UI.
+- Product chrome (`/app` and marketing product previews) uses Sim tokens plus
+  `@sim/emcn` when an emcn primitive exists.
+- `@oppulence/ui` remains the shared primitive kit for domain-neutral controls
+  that emcn does not provide. Do not mix both button/icon systems on one
+  surface.
 - New product and route-private components must follow
-  `components/README.md` and be created with `npm run component:new`.
+  `components/README.md` and be created with `npm run gen -- component`
+  (`npm run component:new` remains an alias). See `docs/growth-standard.md`.
 - New shared primitives must use `npm run ui:add`; do not silently overwrite
   an existing customized primitive.
 - The marketing site also uses MUI icons.
@@ -99,15 +108,114 @@ do not call protected Go API endpoints directly from Client Components.
 - `/healthz` is used for liveness and `/readyz` for readiness.
 - Deployment includes public smoke tests.
 
+## How to add a new product feature
+
+**MUST use `npm run gen`. MUST NOT invent a parallel file tree.**
+Hand-created pages, components, hooks, fetchers, stores, schemas, or stories
+fail WEB029 (`@oppulence-gen` stamp + sibling `*.lit.ts`). If the generator
+cannot express the change, stop — do not improvise a second layout.
+
+Scaffold with `npm run gen`, then fill in the marked `/* implementation */`
+regions. The contract is `docs/growth-standard.md`.
+
+Work from `apps/rowboat-www`. Names and domains are kebab-case. Routes are
+slash-separated kebab segments. `--dry-run` prints paths without writing.
+The generator refuses to overwrite and has no `--force`.
+
+### 1. Pick the generator
+
+| You are adding                                        | Command                        | Notes                                                                                                                                  |
+| ----------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| A new authenticated product area                      | `gen feature`                  | Page + panel + lit. Add `--operation` / `--lib` / `--store-name` only when needed.                                                     |
+| A route skeleton only                                 | `gen page`                     | `page.tsx`, `loading.tsx`, `error.tsx`, `search-params.ts`, route-private panel. `--operation` also writes the hook + prefetch.        |
+| Reusable UI in one domain                             | `gen component --kind feature` | Writes `*.tsx`, test, Zod schema, `*.lit.ts`, Storybook story                                                                          |
+| UI used by one route subtree                          | `gen component --kind route`   | Same files, under `app/(product)/app/<route>/_components/`                                                                             |
+| A Zod-only validation module                          | `gen schema`                   | No React. Prefer an Orval schema from `lib/api/generated/zod` when the Go API owns the shape.                                          |
+| A TanStack Query read                                 | `gen hook`                     | Prefer `--operation listConnectors`. Writes `use-*` + `fetch-*` + MSW test + `prefetch-*` + keys. Query/path params come from OpenAPI. |
+| A TanStack Query write                                | `gen mutation`                 | Prefer `--operation createRevenueAction`. Writes `use-*` + `mutate-*` + keys.                                                          |
+| A non-UI helper                                       | `gen lib`                      | Server-safe, Zod in/out, no React                                                                                                      |
+| Ephemeral client state (canvas, drag, unsaved buffer) | `gen store`                    | Zustand only. Never navigation, remote data, or URL state.                                                                             |
+| A story for an existing component                     | `gen story`                    | Colocated CSF. Do not add product stories under root `stories/`.                                                                       |
+| A shared primitive                                    | `npm run ui:add`               | Domain-neutral only. Not `gen`.                                                                                                        |
+
+`npm run component:new` is an alias for `npm run gen -- component`.
+
+### 2. Scaffold, then implement
+
+New authenticated route (preferred for a product area):
+
+```bash
+npm run gen -- feature \
+  --domain forecasts \
+  --route forecasts \
+  --name forecasts \
+  --title "Forecasts"
+```
+
+Optional flags on `feature`: `--client` (panel only), `--lib`,
+`--store-name canvas-viewport`, `--fields tab:string`, `--operation listConnectors`
+(or `--orval-schema` + `--orval-import` + `--path`). That also writes the
+hook, a `prefetch-*.ts` helper, and a route `prefetch.ts` that seeds
+HydrationBoundary. Do not use tRPC; Orval + `requestJson` is the fetch compiler.
+
+Atomic examples:
+
+```bash
+npm run gen -- page --route forecasts --title "Forecasts"
+npm run gen -- component --kind feature --domain agents --name agent-card
+npm run gen -- component --kind route --route revenue/relationships --name relationship-toolbar --client
+npm run gen -- schema --owner feature --domain agents --name agent-card --fields label:string
+npm run gen -- hook --operation listConnectors
+npm run gen -- mutation --operation createRevenueAction --invalidate list-revenue-actions
+npm run gen -- lib --domain revenue --name format-money
+npm run gen -- store --name canvas-viewport --domain workflows
+npm run gen -- story --name agent-card --kind feature --domain agents
+```
+
+After generation:
+
+1. Fill implementation regions. Keep the generated file-level JSDoc.
+2. Extend the generated test through accessible roles and user-visible behavior.
+3. Do not add barrel `index.ts` files.
+4. Do not add the surface to `product-dashboard-client.tsx` or
+   `dashboard-route-content.tsx`.
+
+### 3. Type and boundary rules agents must not break
+
+- No new naked domain types. The only legal form is a Zod schema plus
+  `export type Foo = z.infer<typeof FooSchema>`. Host element props may
+  intersect `ComponentPropsWithoutRef<"section">`.
+- No `as T` after JSON, storage, or form parsing. Use `requestJson` with an
+  Orval or local Zod schema.
+- Server Components are the default. Add `--client` only for hooks, events, or
+  browser APIs. Client files must include both `"use client"` and
+  `import "client-only"`.
+- Query keys, fetchers, and `staleTime` stay in non-`'use client'` modules
+  under `hooks/queries/utils/`.
+- Zustand is not for navigation or server data. Shareable view-state is nuqs
+  in the route `search-params.ts`.
+- Browser code never calls Go directly and never receives WorkOS tokens.
+
+### 4. Verify
+
+```bash
+npm test
+npm run verify:fast
+```
+
+Before merge: `npm run verify`. `npm run gen:check` (also in `verify:fast` and
+lefthook) is the growth-standard gate. WEB019/WEB020 enforce component
+placement and tests. WEB023–WEB029 enforce Zod-only types, generated
+page/hook skeletons, Orval fetch contracts, and `@oppulence-gen` stamps.
+
 ## Required Direction for New Work
 
-### Generate and organize React components
+### Generate and organize product code
 
-Use the repository generators instead of manually creating new component and
-test scaffolds. The generator encodes ownership, naming, Server/Client
-boundaries, accessibility, and testing conventions that CI enforces.
+Use `npm run gen` instead of manually creating scaffolds. Follow **How to add
+a new product feature** above. Full kind list: `docs/growth-standard.md`.
 
-Choose ownership before generating:
+Choose ownership before generating a component:
 
 | Component ownership | Use when                                     | Destination                                          |
 | ------------------- | -------------------------------------------- | ---------------------------------------------------- |
@@ -115,50 +223,10 @@ Choose ownership before generating:
 | Product feature     | Reusable within one product domain           | `components/features/<domain>/<component>/`          |
 | Route-private       | Used only by one product route subtree       | `app/(product)/app/<route>/_components/<component>/` |
 
-#### Generate a product feature component
-
-```bash
-npm run component:new -- --kind feature --domain agents --name agent-card
-```
-
-This creates:
-
-```text
-components/features/agents/agent-card/
-├── agent-card.tsx
-└── agent-card.test.tsx
-```
-
-#### Generate a route-private component
-
-```bash
-npm run component:new -- \
-  --kind route \
-  --route revenue/relationships \
-  --name relationship-toolbar
-```
-
-This creates the component and its test under:
-
-```text
-app/(product)/app/revenue/relationships/_components/relationship-toolbar/
-```
-
-#### Generate a Client Component only when required
-
-Server Components are the default. Add `--client` only when the component
-requires hooks, event handlers, or browser APIs:
-
-```bash
-npm run component:new -- \
-  --kind route \
-  --route workflows \
-  --name schedule-form \
-  --client
-```
-
-The `--client` template adds both `"use client"` and `import "client-only"` so
-the module cannot accidentally enter a server-only graph.
+A feature component writes `*.tsx`, `*.test.tsx`, `*.schema.ts`, `*.lit.ts`, and
+`*.stories.tsx`. Domain types are Zod schemas plus `z.infer`. Add `--client`
+only when the component requires hooks, event handlers, or browser APIs. The
+`--client` template adds both `"use client"` and `import "client-only"`.
 
 #### Generate a shared UI primitive
 
@@ -188,12 +256,13 @@ and apply intentional changes manually.
 - The generator refuses to overwrite existing files and intentionally has no
   `--force` mode.
 - Generated components use named component and Props exports, a semantic
-  section root, a stable `data-slot`, native element props, and the shared
-  `cn` utility. Do not add barrel exports.
+  section root, a stable `data-slot`, native element props, Zod domain props,
+  and the shared `cn` utility. Do not add barrel exports.
 - Every generated component includes a colocated Testing Library test. Tests
   should exercise the public, accessible contract through roles, names, and
   user-visible behavior rather than implementation details.
-- `config/architecture/component-baseline.json` is an exact legacy baseline,
+- `config/architecture/component-baseline.json` and
+  `config/architecture/generator-baseline.json` are exact legacy baselines,
   not a place to register new exceptions.
 
 After generation, implement the component and extend its generated test, then
@@ -226,12 +295,16 @@ app/
         ├── layout.tsx
         ├── loading.tsx
         ├── error.tsx
-        ├── chat/page.tsx
-        ├── relationships/page.tsx
+        ├── page.tsx
         ├── agents/page.tsx
         ├── workflows/page.tsx
+        ├── revenue/page.tsx
+        ├── report/page.tsx
         └── settings/page.tsx
 ```
+
+Leaf routes own their panels under `_components/`. Do not reintroduce a view
+switch in `dashboard-route-content.tsx`.
 
 The product layout should perform the initial session check on the server,
 redirect unauthenticated users before hydration, and pass only serializable
@@ -240,6 +313,35 @@ display/session data to a small Client Component provider.
 Use URL paths and search parameters for meaningful navigation, selected
 resources, and shareable filters. Do not make React state the only source of
 truth for product navigation.
+
+### Own each piece of state in one home
+
+Pick exactly one home for each piece of state. This is the Sim query/URL split
+adapted to a BFF in front of Go:
+
+| Home            | Owns                                       | Examples                                      |
+| --------------- | ------------------------------------------ | --------------------------------------------- |
+| TanStack Query  | Remote/server data                         | scans, source health, agent catalog           |
+| nuqs URL params | Shareable view-state                       | revenue tab, settings section, report scan id |
+| Zustand         | High-frequency ephemeral client state only | canvas pan/zoom, drag, unsaved buffers        |
+| `useState`      | Local, single-component UI                 | hover, transient dialog                       |
+
+Rules:
+
+- Do not reconstruct query strings with `router.replace` / `router.push` when
+  only the current path's search params change. Use the feature's
+  `search-params.ts` and nuqs setters.
+- `router.push` remains correct for a path change (`/app/settings` →
+  `/app/revenue`).
+- Query key factories, fetchers, mappers, and `staleTime` constants live in
+  non-`'use client'` modules under `hooks/queries/utils/`. Hooks that call
+  `useQuery` may be client modules; they import those primitives back.
+- Same-origin JSON goes through `requestJson` in `lib/api/request-json.ts`,
+  which validates with generated Orval Zod schemas. Do not add a second
+  hand-written contract layer.
+- Server prefetch talks to Go with the sealed session. Do not HTTP-loopback
+  to `/api/rowboat/...`.
+- Do not introduce Zustand for dashboard navigation.
 
 ### Keep client boundaries narrow
 
@@ -449,14 +551,15 @@ it with `npm i -g vercel` to enable workflows such as `vercel env pull`,
 
 When improving production readiness, use this order:
 
-1. Extract the shared dashboard client island into narrow route-owned islands.
-2. Migrate every legacy JSON cast and raw fetch to generated/validated clients.
-3. Remove exact migration exceptions from `eslint.config.mjs` one at a time.
-4. Introduce dynamic imports and optimized image/font delivery.
-5. Add structured observability, request IDs, and exception reporting.
-6. Move remaining raw browser preferences to scoped storage.
-7. Lower bundle and Lighthouse regression budgets as improvements land.
-8. Complete marketing metadata, accessibility, and SEO conventions.
+1. Keep query keys, fetchers, and `staleTime` out of `'use client'` modules.
+2. Migrate remaining inline `useQuery` keys onto `hooks/queries` factories.
+3. Migrate every legacy JSON cast and raw fetch to generated/validated clients.
+4. Remove exact migration exceptions from `eslint.config.mjs` one at a time.
+5. Introduce dynamic imports and optimized image/font delivery.
+6. Add structured observability, request IDs, and exception reporting.
+7. Move remaining raw browser preferences to scoped storage.
+8. Lower bundle and Lighthouse regression budgets as improvements land.
+9. Complete marketing metadata, accessibility, and SEO conventions.
 
 ## Change Discipline
 

@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
+import {
+  useSidebarAgents,
+  useSidebarRuns,
+  useSidebarTasks,
+} from "@/hooks/queries/use-sidebar-catalog";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -51,15 +56,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
-import { dashboardFetch } from "@/lib/auth/client";
-import { isOptionalDashboardFailure } from "@/lib/dashboard-json";
 import { getPref, setPref, usePref } from "@/lib/console-prefs";
-import {
-  connectedSourceCount,
-  googleNeedsReconnect,
-  listRelationshipSourceStatuses,
-  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
-} from "@/lib/revenue";
+import { connectedSourceCount, googleNeedsReconnect } from "@/lib/revenue";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
 import type { ResourceKind } from "@/lib/dashboard-resource";
 import {
@@ -512,10 +510,7 @@ function TickMeter({ ratio }: { ratio: number }) {
 function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen?: () => void }) {
   // A shared query, not a one-time load: this card used to keep saying "No
   // sources connected" after an audit had just marked Google for reconnecting.
-  const sources = useQuery({
-    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
-    queryFn: listRelationshipSourceStatuses,
-  });
+  const sources = useRelationshipSourceStatuses();
 
   const trialDaysLeft = trialDaysRemaining(billing);
   if (sources.isPending) return null;
@@ -743,97 +738,24 @@ export function AppShellSidebar({
   onNewChat?: () => void;
   overlayContainer?: HTMLElement | null;
 }) {
-  const [agents, setAgents] = React.useState<string[]>([]);
-  const [tasks, setTasks] = React.useState<{ label: string; value: string }[]>([]);
-  const [taskRuns, setTaskRuns] = React.useState<{ label: string; value: string }[]>([]);
-  const [loadingGroups, setLoadingGroups] = React.useState({
-    agents: true,
-    scheduled: true,
-    runs: true,
-  });
-  const [groupErrors, setGroupErrors] = React.useState<Partial<Record<string, string>>>({});
+  const agentsQuery = useSidebarAgents();
+  const tasksQuery = useSidebarTasks();
+  const runsQuery = useSidebarRuns();
+  const agents = agentsQuery.data ?? [];
+  const tasks = tasksQuery.data ?? [];
+  const taskRuns = runsQuery.data ?? [];
+  const loadingGroups = {
+    agents: agentsQuery.isPending,
+    scheduled: tasksQuery.isPending,
+    runs: runsQuery.isPending,
+  };
+  const groupErrors: Partial<Record<string, string>> = {
+    ...(agentsQuery.isError ? { agents: "Could not load agents" } : {}),
+    ...(tasksQuery.isError ? { scheduled: "Could not load schedules" } : {}),
+    ...(runsQuery.isError ? { runs: "Could not load runs" } : {}),
+  };
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
   const { theme, setTheme: handleTheme } = useThemePreference();
-
-  React.useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await dashboardFetch("/api/rowboat/v1/agents");
-        if (isOptionalDashboardFailure(res.status)) return;
-        if (!res.ok) throw new Error(`Could not load agents (${res.status})`);
-        const data = await res.json();
-        const names = Array.isArray(data.agents)
-          ? data.agents
-              .map((agent: { slug?: string } | string) =>
-                typeof agent === "string" ? agent : agent.slug,
-              )
-              .filter((agent: string | undefined): agent is string => Boolean(agent))
-          : [];
-        setAgents(names);
-      } catch {
-        setGroupErrors((current) => ({ ...current, agents: "Could not load agents" }));
-      } finally {
-        setLoadingGroups((current) => ({ ...current, agents: false }));
-      }
-    };
-    load();
-  }, []);
-
-  React.useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await dashboardFetch("/api/rowboat/v1/background-tasks");
-        if (isOptionalDashboardFailure(res.status)) return;
-        if (!res.ok) throw new Error(`Could not load schedules (${res.status})`);
-        const data = await res.json();
-        if (Array.isArray(data?.tasks)) {
-          setTasks(
-            data.tasks
-              .filter((task: { slug?: string }) => typeof task?.slug === "string")
-              .map((task: { slug: string; name?: string; active?: boolean }) => ({
-                value: task.slug,
-                label: task.name || task.slug,
-              })),
-          );
-        }
-      } catch {
-        setGroupErrors((current) => ({ ...current, scheduled: "Could not load schedules" }));
-      } finally {
-        setLoadingGroups((current) => ({ ...current, scheduled: false }));
-      }
-    };
-    load();
-  }, []);
-
-  React.useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await dashboardFetch("/api/rowboat/v1/background-task-runs");
-        if (isOptionalDashboardFailure(res.status)) return;
-        if (!res.ok) throw new Error(`Could not load runs (${res.status})`);
-        const data = await res.json();
-        if (Array.isArray(data?.runs)) {
-          setTaskRuns(
-            data.runs
-              .filter(
-                (run: { runId?: string; slug?: string }) =>
-                  typeof run?.runId === "string" && typeof run?.slug === "string",
-              )
-              .slice(0, 8)
-              .map((run: { runId: string; slug: string; status?: string }) => ({
-                value: `${run.slug}/${run.runId}`,
-                label: run.status ? `${run.slug} · ${run.status}` : run.slug,
-              })),
-          );
-        }
-      } catch {
-        setGroupErrors((current) => ({ ...current, runs: "Could not load runs" }));
-      } finally {
-        setLoadingGroups((current) => ({ ...current, runs: false }));
-      }
-    };
-    load();
-  }, []);
 
   const workspace = useWorkspaceLabel(user);
   const planLabel = billing?.plan ? billing.plan[0].toUpperCase() + billing.plan.slice(1) : null;

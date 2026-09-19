@@ -1,24 +1,41 @@
-"use client";
+// Revenue BFF client (RFC 030). Fetchers stay server-importable so RSC
+// prefetch can share the same keys and Zod contracts as the browser hooks.
 
-import "client-only";
-
-// Client for the Revenue Action Queue (RFC 030). Every call goes through the
-// same-origin dashboard proxy, which attaches the rowboat-api bearer token
-// server-side and bounces the browser back through WorkOS on a 401.
-
-import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
+import { fetchDigest, fetchImpact } from "@/hooks/queries/utils/fetch-impact";
 import {
-  ExportCommitment200Response,
-  ListCommitments200Response,
-} from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
+  fetchOpenPromisesReport,
+  fetchReportScan,
+  fetchReportScans,
+} from "@/hooks/queries/utils/fetch-report";
+import { fetchRevenueActions } from "@/hooks/queries/utils/fetch-revenue-actions";
 import {
-  GetRevenueLeakScan200Response,
-  GetOpenPromisesReport200Response,
-  GetRevenueImpact200Response,
-  ListRevenueActions200Response,
-  ListRevenueLeakScans200Response,
-  StartRevenueLeakScan202Response,
-} from "@/lib/api/generated/zod/revenue/revenue";
+  fetchRelationshipSources,
+  fetchRelationshipSourceStatuses,
+} from "@/hooks/queries/utils/fetch-relationship-sources";
+import {
+  fetchIdentityCandidates,
+  fetchPersons,
+  fetchRelationshipAttention,
+  fetchRelationshipGraph,
+  fetchRelationships,
+  fetchSemanticSearch,
+} from "@/hooks/queries/utils/fetch-relationships";
+import {
+  fetchCommunicationPolicy,
+  fetchCommunicationPrivacyRules,
+} from "@/hooks/queries/utils/fetch-communication";
+import { fetchWorkspace } from "@/hooks/queries/utils/fetch-workspace";
+import type { RelationshipListScope } from "@/hooks/queries/utils/relationship-keys";
+import { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY } from "@/hooks/queries/utils/relationship-source-keys";
+import { DashboardRequestError } from "@/lib/api/request-json";
+import {
+  dashboardRequest,
+  redirectBrowserIfUnauthorized,
+  toDashboardAPIPath,
+} from "@/lib/auth/dashboard-fetch";
+import { ExportCommitment200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
+import { StartRevenueLeakScan202Response } from "@/lib/api/generated/zod/revenue/revenue";
 import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
   ActionAudit,
@@ -73,6 +90,21 @@ export class RevenueAPIError extends Error {
   }
 }
 
+function asRevenueError(error: unknown): never {
+  if (error instanceof DashboardRequestError) {
+    throw new RevenueAPIError(error.message, error.status, error.code);
+  }
+  throw error;
+}
+
+async function viaRequest<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    asRevenueError(error);
+  }
+}
+
 /**
  * Validates a response against its contract.
  *
@@ -112,7 +144,7 @@ export function friendlyRevenueError(message: string) {
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await dashboardFetch(toDashboardAPIPath(path), {
+  const res = await dashboardRequest(toDashboardAPIPath(path), {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -120,6 +152,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers || {}),
     },
   });
+  redirectBrowserIfUnauthorized(res.status);
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
     let code: string | undefined;
@@ -150,47 +183,11 @@ export function safeResearchCitationURL(value: string) {
 
 // --- workspace ---------------------------------------------------------------
 
-export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
+export const getWorkspace = (signal?: AbortSignal) => viaRequest(() => fetchWorkspace(signal));
 
-export const getImpact = async (): Promise<RevenueImpact> => {
-  const impact = parsed(
-    GetRevenueImpact200Response,
-    await call<unknown>("/revenue-impact"),
-    "revenue impact",
-  );
-  return {
-    surfaced: impact.surfaced,
-    open: impact.open,
-    handled: impact.handled,
-    snoozed: impact.snoozed ?? 0,
-    dismissed: impact.dismissed ?? 0,
-    approved: impact.approved,
-    executed: impact.executed,
-    replied: impact.replied ?? 0,
-    meetingsBooked: impact.meetingsBooked ?? 0,
-    won: impact.won ?? 0,
-    lost: impact.lost ?? 0,
-    replyRate: impact.replyRate ?? null,
-    meetingRate: impact.meetingRate ?? null,
-    outcomes: (impact.outcomes ?? {}) as Record<string, number>,
-    byDetector: (impact.byDetector ?? []).map((row) => ({
-      detector: row.detector ?? "",
-      surfaced: row.surfaced ?? 0,
-      handled: row.handled ?? 0,
-    })),
-    relationships: impact.relationships ?? 0,
-    atRiskRelationships: impact.atRiskRelationships ?? 0,
-    criticalRelationships: impact.criticalRelationships ?? 0,
-    portfolioRiskScore: impact.portfolioRiskScore ?? 0,
-    overdueCommitments: impact.overdueCommitments ?? 0,
-    overdueByUs: impact.overdueByUs ?? 0,
-    overdueByThem: impact.overdueByThem ?? 0,
-    longestOverdueDays: impact.longestOverdueDays ?? 0,
-    riskReasons: impact.riskReasons ?? [],
-  };
-};
+export const getImpact = (signal?: AbortSignal) => viaRequest(() => fetchImpact(signal));
 
-export const getDigest = () => call<RevenueDigest>("/revenue-digest");
+export const getDigest = (signal?: AbortSignal) => viaRequest(() => fetchDigest(signal));
 
 export interface SemanticMatch {
   threadId: string;
@@ -207,12 +204,7 @@ export async function semanticSearch(
   query: string,
   signal?: AbortSignal,
 ): Promise<{ available: boolean; matches: SemanticMatch[] }> {
-  const params = new URLSearchParams({ q: query });
-  const body = await call<{ available: boolean; matches: SemanticMatch[] }>(
-    `/revenue-search?${params.toString()}`,
-    { signal },
-  );
-  return { available: body.available, matches: body.matches ?? [] };
+  return viaRequest(() => fetchSemanticSearch(query, signal));
 }
 
 // --- billing (upgrade to act) ------------------------------------------------
@@ -245,21 +237,9 @@ export const startScan = async (lookbackDays?: number): Promise<RevenueLeakScan>
     "revenue scan",
   ) as RevenueLeakScan;
 
-export const getScan = async (scanId: string, signal?: AbortSignal): Promise<RevenueLeakScan> =>
-  parsed(
-    GetRevenueLeakScan200Response,
-    await call<unknown>(`/revenue-leak-scans/${scanId}`, { signal }),
-    "revenue scan",
-  ) as RevenueLeakScan;
+export const getScan = fetchReportScan;
 
-export const listScans = async (): Promise<RevenueLeakScan[]> => {
-  const body = parsed(
-    ListRevenueLeakScans200Response,
-    await call<unknown>("/revenue-leak-scans?limit=10"),
-    "revenue scans",
-  );
-  return body.scans as RevenueLeakScan[];
-};
+export const listScans = fetchReportScans;
 
 export function latestCompletedScan(
   scans: Array<Pick<RevenueLeakScan, "id" | "status" | "threadsSeen">>,
@@ -330,14 +310,12 @@ export const connectedSourceCount = (sources: RelationshipSourceStatus[]) =>
 
 // --- queue reads -------------------------------------------------------------
 
-export async function listActions(queueStatus = "open", limit = 25): Promise<RevenueAction[]> {
-  const params = new URLSearchParams({ queueStatus, limit: String(limit) });
-  const body = parsed(
-    ListRevenueActions200Response,
-    await call<unknown>(`/revenue-actions?${params.toString()}`),
-    "revenue actions",
-  );
-  return body.actions as RevenueAction[];
+export async function listActions(
+  queueStatus = "open",
+  limit = 25,
+  signal?: AbortSignal,
+): Promise<RevenueAction[]> {
+  return viaRequest(() => fetchRevenueActions(queueStatus, limit, signal));
 }
 
 export const getAction = (actionId: string) => call<RevenueAction>(`/revenue-actions/${actionId}`);
@@ -407,15 +385,7 @@ export async function listRelationships(
   filters: RelationshipFilters = {},
   signal?: AbortSignal,
 ): Promise<RevenueRelationship[]> {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(filters)) {
-    if (value) params.set(key, value);
-  }
-  const query = params.size ? `?${params.toString()}` : "";
-  const body = await call<{ relationships: RevenueRelationship[] }>(`/relationships${query}`, {
-    signal,
-  });
-  return body.relationships ?? [];
+  return viaRequest(() => fetchRelationships(filters as RelationshipListScope, signal));
 }
 
 export interface RelationshipGraphRequest {
@@ -425,139 +395,17 @@ export interface RelationshipGraphRequest {
   asOf?: string;
 }
 
-async function loadRelationshipGraph(
-  input: RelationshipGraphRequest,
-  signal?: AbortSignal,
-): Promise<RelationshipGraph> {
-  const params = new URLSearchParams({ scope: input.scope });
-  if (input.relationshipId) params.set("relationshipId", input.relationshipId);
-  if (input.depth) params.set("depth", String(input.depth));
-  if (input.asOf) params.set("asOf", input.asOf);
-
-  const payload = await call<unknown>(`/relationships/graph?${params.toString()}`, { signal });
-  const parsed = RelationshipGraphSchema.safeParse(payload);
-  if (!parsed.success) {
-    throw new RevenueAPIError(
-      "The relationship graph response did not match the supported contract.",
-      502,
-      "invalid_relationship_graph_contract",
-    );
-  }
-  return parsed.data;
-}
-
 export async function getRelationshipGraph(
   input: RelationshipGraphRequest,
   signal?: AbortSignal,
 ): Promise<RelationshipGraph> {
-  try {
-    return await loadRelationshipGraph(input, signal);
-  } catch (error) {
-    const legacyPortfolioEndpoint =
-      input.scope === "portfolio" &&
-      error instanceof RevenueAPIError &&
-      error.status === 400 &&
-      /relationshipId/i.test(error.message);
-    if (!legacyPortfolioEndpoint) throw error;
-
-    const relationships = await listRelationships({}, signal);
-    const graphResults = await mapSettledWithConcurrency(relationships, 4, (relationship) =>
-      loadRelationshipGraph(
-        {
-          ...input,
-          scope: "relationship",
-          relationshipId: relationship.id,
-        },
-        signal,
-      ),
-    );
-    const failures = graphResults.filter(
-      (result): result is PromiseRejectedResult => result.status === "rejected",
-    );
-    if (failures.length > 0) {
-      throw new RevenueAPIError(
-        `Could not build a complete portfolio graph: ${failures.length} of ${relationships.length} relationship requests failed.`,
-        502,
-        "partial_relationship_graph",
-      );
-    }
-    const graphs = graphResults.map(
-      (result) => (result as PromiseFulfilledResult<RelationshipGraph>).value,
-    );
-    const generatedAt = graphs.reduce(
-      (latest, graph) => (graph.generatedAt > latest ? graph.generatedAt : latest),
-      new Date().toISOString(),
-    );
-    return parsed(
-      RelationshipGraphSchema,
-      {
-        contractVersion: "2026-08-01",
-        generatedAt,
-        asOf: input.asOf || generatedAt,
-        historical: Boolean(input.asOf),
-        scope: "portfolio",
-        depth: input.depth || 2,
-        nodes: [
-          ...new Map(
-            graphs.flatMap((graph) => graph.nodes).map((node) => [node.id, node]),
-          ).values(),
-        ],
-        edges: [
-          ...new Map(
-            graphs.flatMap((graph) => graph.edges).map((edge) => [edge.id, edge]),
-          ).values(),
-        ],
-        permissions: graphs.length
-          ? {
-              canView: graphs.every((graph) => graph.permissions.canView),
-              canContribute: graphs.every((graph) => graph.permissions.canContribute),
-              canApprove: graphs.every((graph) => graph.permissions.canApprove),
-              canExecute: graphs.every((graph) => graph.permissions.canExecute),
-              canSaveViews: graphs.every((graph) => graph.permissions.canSaveViews),
-            }
-          : {
-              canView: true,
-              canContribute: false,
-              canApprove: false,
-              canExecute: false,
-              canSaveViews: false,
-            },
-      },
-      "relationship graph",
-    );
-  }
-}
-
-async function mapSettledWithConcurrency<Input, Output>(
-  inputs: readonly Input[],
-  concurrency: number,
-  worker: (input: Input) => Promise<Output>,
-): Promise<PromiseSettledResult<Output>[]> {
-  const results: PromiseSettledResult<Output>[] = new Array(inputs.length);
-  let nextIndex = 0;
-  const run = async () => {
-    while (nextIndex < inputs.length) {
-      const index = nextIndex++;
-      try {
-        results[index] = { status: "fulfilled", value: await worker(inputs[index]) };
-      } catch (reason) {
-        results[index] = { status: "rejected", reason };
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, run));
-  return results;
+  return viaRequest(() => fetchRelationshipGraph(input, signal));
 }
 
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
 
-export async function listPersons(q = ""): Promise<RelationshipPerson[]> {
-  const params = new URLSearchParams({ limit: "500" });
-  if (q.trim()) params.set("q", q.trim());
-  const body = await call<{ persons: RelationshipPerson[] }>(
-    `/relationship-persons?${params.toString()}`,
-  );
-  return body.persons ?? [];
+export async function listPersons(q = "", signal?: AbortSignal): Promise<RelationshipPerson[]> {
+  return viaRequest(() => fetchPersons(q, signal));
 }
 
 export const getPersonAttributes = (personId: string) =>
@@ -654,10 +502,8 @@ export const getRelationshipCommunicationTimeline = (
       throw error;
     });
 
-export const getCommunicationPolicy = (sourceAccountId: string) =>
-  call<CommunicationPolicy>(
-    `/revenue-workspaces/current/communication-policy/${encodeURIComponent(sourceAccountId)}`,
-  );
+export const getCommunicationPolicy = (sourceAccountId: string, signal?: AbortSignal) =>
+  viaRequest(() => fetchCommunicationPolicy(sourceAccountId, signal));
 
 export const putCommunicationPolicy = (
   sourceAccountId: string,
@@ -679,10 +525,8 @@ export const putCommunicationPolicy = (
     },
   );
 
-export const listCommunicationPrivacyRules = () =>
-  call<{ rules: CommunicationPrivacyRule[] }>(
-    "/revenue-workspaces/current/communication-privacy-rules",
-  ).then((body) => body.rules ?? []);
+export const listCommunicationPrivacyRules = (signal?: AbortSignal) =>
+  viaRequest(() => fetchCommunicationPrivacyRules(signal));
 
 export const createCommunicationPrivacyRule = (input: { kind: string; value: string }) =>
   call<CommunicationPrivacyRule>("/revenue-workspaces/current/communication-privacy-rules", {
@@ -830,17 +674,12 @@ export const requestConversationDeletion = (relationshipId: string, requestId: s
  * One cache entry for source health. The sidebar and the revenue panel both
  * read it, so a finished audit refreshes both with one invalidation.
  */
-export const RELATIONSHIP_SOURCE_STATUS_QUERY_KEY = ["relationship-source-statuses"] as const;
+export { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY };
 
-export const listRelationshipSourceStatuses = () =>
-  call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
-    (body) => body.sources ?? [],
-  );
+export const listRelationshipSourceStatuses = fetchRelationshipSourceStatuses;
 
-export const listRelationshipSources = () =>
-  call<{ sources: RelationshipSourceInventoryItem[] }>("/relationship-sources").then(
-    (body) => body.sources ?? [],
-  );
+export const listRelationshipSources = (signal?: AbortSignal) =>
+  viaRequest(() => fetchRelationshipSources(signal));
 
 export const getRelationshipBetaDiagnostics = () =>
   call<BetaDiagnostics>("/relationship-beta/diagnostics");
@@ -870,13 +709,11 @@ export const disconnectRelationshipSource = (source: string, sourceAccountId: st
     {},
   ) as Promise<RelationshipSourceStatus>;
 
-export const listIdentityCandidates = (status = "pending", relationshipId?: string) => {
-  const params = new URLSearchParams({ status });
-  if (relationshipId) params.set("relationshipId", relationshipId);
-  return call<{ candidates: RelationshipIdentityCandidate[] }>(
-    `/relationship-identity-candidates?${params.toString()}`,
-  ).then((body) => body.candidates ?? []);
-};
+export const listIdentityCandidates = (
+  status = "pending",
+  relationshipId?: string,
+  signal?: AbortSignal,
+) => viaRequest(() => fetchIdentityCandidates(status, relationshipId, signal));
 
 export const decideIdentityCandidate = (
   candidateId: string,
@@ -887,10 +724,8 @@ export const decideIdentityCandidate = (
     input,
   ) as Promise<RelationshipIdentityCandidate>;
 
-export const listRelationshipAttention = (status = "open") =>
-  call<{ contractVersion: string; asOf: string; items: RelationshipAttentionItem[] }>(
-    `/relationship-attention?status=${encodeURIComponent(status)}`,
-  ).then((body) => body.items ?? []);
+export const listRelationshipAttention = (status = "open", signal?: AbortSignal) =>
+  viaRequest(() => fetchRelationshipAttention(status, signal));
 
 export const decideRelationshipAttention = (
   attentionId: string,
@@ -1076,27 +911,7 @@ export async function listCommitments(
   filter: CommitmentRegisterFilter = {},
   signal?: AbortSignal,
 ): Promise<RegisterEntry[]> {
-  const params = new URLSearchParams();
-  if (filter.direction) params.set("direction", filter.direction);
-  if (filter.state?.length) params.set("state", filter.state.join(","));
-  if (filter.owner) params.set("owner", filter.owner);
-  if (filter.relationshipId) params.set("relationshipId", filter.relationshipId);
-  if (filter.dueBefore) params.set("dueBefore", filter.dueBefore);
-  if (filter.changedSince) params.set("changedSince", filter.changedSince);
-  if (filter.includeCandidates) params.set("includeCandidates", "true");
-  if (filter.limit) params.set("limit", String(filter.limit));
-  if (filter.offset) params.set("offset", String(filter.offset));
-  const query = params.toString();
-  const res = parsed(
-    ListCommitments200Response,
-    await call<unknown>(`/commitments${query ? `?${query}` : ""}`, { signal }),
-    "commitments",
-  );
-  return res.commitments.map((row) => ({
-    ...row,
-    dueAt: row.dueAt ?? undefined,
-    completedAt: row.completedAt ?? undefined,
-  })) as RegisterEntry[];
+  return viaRequest(() => fetchCommitments(filter, signal));
 }
 
 export async function getCommitmentRecord(
@@ -1113,45 +928,23 @@ export async function getCommitmentRecord(
 
 /** The Markdown document a user forwards. Returned as text, not JSON. */
 export async function getCommitmentRecordMarkdown(commitmentId: string): Promise<string> {
-  const res = await dashboardFetch(
+  const res = await dashboardRequest(
     toDashboardAPIPath(`/commitments/${encodeURIComponent(commitmentId)}/export?format=md`),
   );
+  redirectBrowserIfUnauthorized(res.status);
   if (!res.ok) {
     throw new RevenueAPIError(`Export failed (${res.status})`, res.status);
   }
   return res.text();
 }
 
-export async function getOpenPromisesReport(
-  scanId: string,
-  signal?: AbortSignal,
-): Promise<OpenPromisesReport> {
-  const report = parsed(
-    GetOpenPromisesReport200Response,
-    await call<unknown>(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report`, { signal }),
-    "open promises report",
-  );
-  return {
-    ...report,
-    items: report.items.map((item) => ({ ...item, dueAt: item.dueAt ?? undefined })),
-  } as OpenPromisesReport;
-}
+export const getOpenPromisesReport = fetchOpenPromisesReport;
 
 export async function getOpenPromisesReportMarkdown(scanId: string): Promise<string> {
-  const res = await dashboardFetch(
+  const res = await dashboardRequest(
     toDashboardAPIPath(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report?format=md`),
   );
+  redirectBrowserIfUnauthorized(res.status);
   if (!res.ok) throw new RevenueAPIError(`Report export failed (${res.status})`, res.status);
   return res.text();
-}
-
-export function downloadMarkdown(filename: string, markdown: string) {
-  const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown;charset=utf-8" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }

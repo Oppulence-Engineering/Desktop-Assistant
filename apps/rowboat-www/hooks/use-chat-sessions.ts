@@ -2,17 +2,15 @@
 
 import "client-only";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { useRemoteChatSessions } from "@/hooks/queries/use-chat-sessions";
 
 import {
   conversationFromAgentEvents,
   type AgentHistoryItem,
   type ConversationItem,
 } from "@/lib/agent-history";
-import {
-  ListAgentSessionEvents200Response,
-  ListAgentSessions200Response,
-} from "@/lib/api/generated/zod/agent-sessions/agent-sessions";
+import { ListAgentSessionEvents200Response } from "@/lib/api/generated/zod/agent-sessions/agent-sessions";
 import type { DurableAgentSessionEvent } from "@/lib/api/generated/client/model/durableAgentSessionEvent";
 import { requestDashboardJson } from "@/lib/dashboard-json";
 import {
@@ -20,7 +18,6 @@ import {
   loadSession,
   mergeSessionLists,
   saveSession,
-  type SessionMeta,
   type SessionScope,
 } from "@/lib/chat-sessions";
 import type { AgentRunSnapshot } from "@/hooks/use-agent-run";
@@ -38,18 +35,6 @@ type UseChatSessionsOptions = {
   selectedAgent: string;
 };
 
-function sessionTitle(session: {
-  agent: string;
-  title?: string | null;
-  lastActivityAt?: string | null;
-  createdAt: string;
-}): string {
-  return (
-    session.title ||
-    `${session.agent} · ${new Date(session.lastActivityAt || session.createdAt).toLocaleDateString()}`
-  );
-}
-
 /**
  * Owns the local transcript cache and durable history projection. The server
  * event log remains authoritative; the memory cache only avoids repeat loads
@@ -65,35 +50,10 @@ export function useChatSessions({
   scope,
   selectedAgent,
 }: UseChatSessionsOptions) {
-  const [remoteSessions, setRemoteSessions] = useState<SessionMeta[]>([]);
+  const remoteSessionsQuery = useRemoteChatSessions();
   // The memory cache contains at most 30 entries, so deriving this projection
   // during render is safer than duplicating synchronized session-list state.
-  const sessions = mergeSessionLists(listSessions(scope), remoteSessions);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const data = await requestDashboardJson("/agent-sessions", ListAgentSessions200Response, {
-          softFail: true,
-        });
-        if (!data) return;
-        const remote = data.sessions.map<SessionMeta>((session) => ({
-          runId: session.sessionId,
-          title: sessionTitle(session),
-          agent: session.agent,
-          updatedAt: new Date(session.lastActivityAt || session.createdAt).getTime(),
-        }));
-        if (!cancelled) setRemoteSessions(remote);
-      } catch (error) {
-        console.warn("Failed to load durable chat history", error);
-      }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [scope]);
+  const sessions = mergeSessionLists(listSessions(scope), remoteSessionsQuery.data ?? []);
 
   useEffect(() => {
     if (!activeRunId || conversation.length === 0) return;

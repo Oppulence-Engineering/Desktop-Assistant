@@ -5,6 +5,7 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -17,7 +18,6 @@ import type {
 
 const navigation = vi.hoisted(() => ({
   params: new URLSearchParams(),
-  replace: vi.fn(),
 }));
 
 const mocks = vi.hoisted(() => ({
@@ -26,15 +26,17 @@ const mocks = vi.hoisted(() => ({
   getImpact: vi.fn(),
   getOpenPromisesReport: vi.fn(),
   getScan: vi.fn(),
-  listActions: vi.fn(),
+  listActions:
+    vi.fn<(filter: string, limit?: number, signal?: AbortSignal) => Promise<RevenueAction[]>>(),
   listRelationshipSourceStatuses: vi.fn(),
   listScans: vi.fn(),
   startScan: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: navigation.replace }),
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => navigation.params,
+  usePathname: () => "/app/report",
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: React.ComponentProps<"a">) => (
@@ -46,6 +48,30 @@ vi.mock("next/link", () => ({
 vi.mock("@/lib/revenue", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/revenue")>()),
   ...mocks,
+}));
+vi.mock("@/hooks/queries/utils/fetch-relationship-sources", () => ({
+  fetchRelationshipSourceStatuses: mocks.listRelationshipSourceStatuses,
+  loadRelationshipSourceStatuses: mocks.listRelationshipSourceStatuses,
+}));
+vi.mock("@/hooks/queries/utils/fetch-report", () => ({
+  fetchReportScans: mocks.listScans,
+  fetchReportScan: mocks.getScan,
+  fetchOpenPromisesReport: mocks.getOpenPromisesReport,
+  loadReportScans: mocks.listScans,
+  loadReportScan: mocks.getScan,
+  loadOpenPromisesReport: mocks.getOpenPromisesReport,
+}));
+vi.mock("@/hooks/queries/utils/fetch-impact", () => ({
+  fetchImpact: mocks.getImpact,
+  fetchDigest: mocks.getDigest,
+  loadImpact: mocks.getImpact,
+  loadDigest: mocks.getDigest,
+}));
+vi.mock("@/hooks/queries/utils/fetch-revenue-actions", () => ({
+  fetchRevenueActions: (filter: string, limit?: number, signal?: AbortSignal) =>
+    mocks.listActions(filter, limit, signal),
+  loadRevenueActions: (request: unknown, filter: string, limit?: number, signal?: AbortSignal) =>
+    mocks.listActions(filter, limit, signal),
 }));
 vi.mock("@/lib/api/connectors/google-oauth", () => ({
   createGoogleCommitmentsAuthorizationURL: mocks.createGoogleCommitmentsAuthorizationURL,
@@ -151,13 +177,27 @@ const impact: RevenueImpact = {
   riskReasons: [],
 };
 
+function wrapWithQuery(ui: React.ReactElement, client: QueryClient) {
+  return (
+    <NuqsTestingAdapter
+      hasMemory
+      onUrlUpdate={({ searchParams }) => {
+        navigation.params = searchParams;
+      }}
+      searchParams={navigation.params}
+    >
+      <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+    </NuqsTestingAdapter>
+  );
+}
+
 function renderWithQuery(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return {
     client,
-    ...render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>),
+    ...render(wrapWithQuery(ui, client)),
   };
 }
 
@@ -165,7 +205,6 @@ afterEach(cleanup);
 
 beforeEach(() => {
   navigation.params = new URLSearchParams();
-  navigation.replace.mockReset();
   for (const mock of Object.values(mocks)) mock.mockReset();
 
   mocks.listRelationshipSourceStatuses.mockResolvedValue([sourceStatus("live")]);
@@ -229,13 +268,11 @@ describe("Open Promises report hardening", () => {
       expect(mocks.startScan).toHaveBeenCalledOnce();
     });
     expect(mocks.startScan).toHaveBeenCalledWith(180);
-    view.rerender(
-      <QueryClientProvider client={view.client}>
-        <OpenPromisesReportClient />
-      </QueryClientProvider>,
-    );
+    view.rerender(wrapWithQuery(<OpenPromisesReportClient />, view.client));
     expect(mocks.startScan).toHaveBeenCalledOnce();
-    expect(navigation.replace).toHaveBeenCalledWith("/app/report?scan=scan-first");
+    await waitFor(() => {
+      expect(navigation.params.get("scan")).toBe("scan-first");
+    });
   });
 
   it("loads a deep-linked scan, refreshes terminal health, and selects another scan in the URL", async () => {
@@ -249,13 +286,15 @@ describe("Open Promises report hardening", () => {
     renderWithQuery(<OpenPromisesReportClient />);
 
     expect(await screen.findByText("No open promises found")).toBeInTheDocument();
-    expect(mocks.getScan).toHaveBeenCalledWith("scan-deep");
+    expect(mocks.getScan).toHaveBeenCalledWith("scan-deep", expect.anything());
     await waitFor(() => {
       expect(mocks.listRelationshipSourceStatuses.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
 
     await userEvent.selectOptions(screen.getByLabelText("Audit"), "scan-older");
-    expect(navigation.replace).toHaveBeenCalledWith("/app/report?scan=scan-older");
+    await waitFor(() => {
+      expect(navigation.params.get("scan")).toBe("scan-older");
+    });
   });
 
   it("retries a report load without restarting the completed scan", async () => {
@@ -278,7 +317,7 @@ describe("Open Promises report hardening", () => {
 });
 
 describe("revenue query retries", () => {
-  it("retries an explicit queue load error and reloads when its refresh key changes", async () => {
+  it("retries an explicit queue load error and reloads after invalidation", async () => {
     mocks.listActions
       .mockRejectedValueOnce(new Error("queue offline"))
       .mockResolvedValueOnce([action])
@@ -298,18 +337,7 @@ describe("revenue query retries", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText(action.reason)).toBeVisible();
 
-    view.rerender(
-      <QueryClientProvider client={view.client}>
-        <QueueView
-          onError={onError}
-          onNotice={vi.fn()}
-          onScan={vi.fn()}
-          refreshKey={1}
-          scanning={false}
-          workspace={null}
-        />
-      </QueryClientProvider>,
-    );
+    await view.client.invalidateQueries({ queryKey: ["revenue-action"] });
 
     expect(await screen.findByText("Refreshed renewal thread")).toBeVisible();
     expect(mocks.listActions).toHaveBeenCalledTimes(3);

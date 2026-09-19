@@ -32,8 +32,11 @@ import { ScrollArea } from "@oppulence/ui/components/scroll-area";
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { WorkspaceEmptyState } from "@/components/revenue/shared";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { useAgentSummaries } from "@/hooks/queries/use-agents";
+import { agentKeys } from "@/hooks/queries/utils/agent-keys";
 import { dashboardFetch } from "@/lib/auth/client";
-import { parseAgentsResponse, type AgentSummary } from "@/lib/agents/agent-schemas";
+import { type AgentSummary } from "@/lib/agents/agent-schemas";
 import { cn } from "@/lib/utils";
 
 function slugify(value: string): string {
@@ -199,40 +202,33 @@ export function AgentsView({
   onOpenDefinition: (slug: string) => void;
   onUseAgent: (slug: string) => void;
 }) {
-  const [agents, setAgents] = React.useState<AgentSummary[]>([]);
+  const queryClient = useQueryClient();
+  const agentsQuery = useAgentSummaries();
+  const agents = agentsQuery.data ?? [];
   const [selectedSlug, setSelectedSlug] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [mutating, setMutating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await dashboardFetch("/api/rowboat/v1/agents");
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        const message =
-          body && typeof body === "object" && "message" in body && typeof body.message === "string"
-            ? body.message
-            : `Could not load agents (${response.status})`;
-        throw new Error(message);
-      }
-      const nextAgents = parseAgentsResponse(body);
-      setAgents(nextAgents);
-      setSelectedSlug((current) =>
-        nextAgents.some((agent) => agent.slug === current) ? current : nextAgents[0]?.slug || "",
-      );
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load agents");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loading = mutating || agentsQuery.isPending;
 
   React.useEffect(() => {
-    void load();
-  }, [load]);
+    if (agentsQuery.error) {
+      setError(
+        agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",
+      );
+    }
+  }, [agentsQuery.error]);
+
+  React.useEffect(() => {
+    if (agents.length === 0) return;
+    setSelectedSlug((current) =>
+      agents.some((agent) => agent.slug === current) ? current : agents[0]?.slug || "",
+    );
+  }, [agents]);
+
+  const load = React.useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
+  }, [queryClient]);
 
   const selected = agents.find((agent) => agent.slug === selectedSlug) || null;
   const handleCreated = async (slug: string) => {
@@ -243,7 +239,7 @@ export function AgentsView({
   };
 
   const deleteAgent = async (slug: string) => {
-    setLoading(true);
+    setMutating(true);
     setError(null);
     try {
       const response = await dashboardFetch(`/api/rowboat/v1/agents/${encodeURIComponent(slug)}`, {
@@ -254,7 +250,8 @@ export function AgentsView({
       await Promise.all([load(), onAgentsChanged()]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not delete agent");
-      setLoading(false);
+    } finally {
+      setMutating(false);
     }
   };
 

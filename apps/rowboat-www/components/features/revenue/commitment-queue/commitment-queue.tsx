@@ -63,12 +63,15 @@ import {
   SimProductToolbar,
 } from "@/components/features/sim-product/sim-product-frame";
 
+import type { RegisterView } from "@/lib/revenue/commitment-register-filter";
 import type {
-  CommitmentRegisterFilter,
   RegisterEntry,
   RelationshipSourceInventoryItem,
   RevenueLeakScan,
 } from "@/types/revenue";
+
+export type { RegisterView } from "@/lib/revenue/commitment-register-filter";
+export { registerFilterFor } from "@/lib/revenue/commitment-register-filter";
 
 const THREE_DAYS = 72 * 60 * 60 * 1000;
 const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live", "stale"]);
@@ -108,7 +111,6 @@ export interface CommitmentQueueItem {
 
 /** The five views of the commitment register (one-pager §3). Each one is a
  *  different query against GET /v1/commitments, not a different screen. */
-export type RegisterView = "we_owe" | "they_owe" | "changed" | "by_account" | "by_owner";
 
 export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[] = [
   { id: "we_owe", label: "What we owe", hint: "Outbound obligations by risk, then by date." },
@@ -133,50 +135,6 @@ export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[]
     hint: "What each person has promised. Used for load and handover.",
   },
 ];
-
-/** The filter each view sends to the register. Kept beside the labels so the
- *  view and its query cannot drift apart. */
-export function registerFilterFor(
-  view: RegisterView,
-  options: {
-    relationshipId?: string;
-    owner?: string;
-    since?: string;
-    includeCandidates?: boolean;
-  } = {},
-): CommitmentRegisterFilter | null {
-  const includeCandidates = options.includeCandidates || undefined;
-  switch (view) {
-    case "we_owe":
-      return {
-        direction: "promised_by_me",
-        state: ["open", "at_risk"],
-        includeCandidates,
-        limit: 200,
-      };
-    case "they_owe":
-      return {
-        direction: "promised_by_them",
-        state: ["open", "at_risk"],
-        includeCandidates,
-        limit: 200,
-      };
-    case "changed":
-      return {
-        changedSince: options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        includeCandidates,
-        limit: 200,
-      };
-    case "by_account":
-      return options.relationshipId
-        ? { relationshipId: options.relationshipId, includeCandidates, limit: 200 }
-        : null;
-    case "by_owner":
-      return options.owner?.trim()
-        ? { owner: options.owner.trim(), includeCandidates, limit: 200 }
-        : null;
-  }
-}
 
 export interface CommitmentQueueProps extends Omit<
   React.ComponentPropsWithoutRef<"section">,

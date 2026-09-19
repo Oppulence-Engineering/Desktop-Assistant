@@ -1,0 +1,44 @@
+import { {{orvalSchema}}{{#if hasQuery}}, {{orvalQuery}}{{/if}} } from "{{orvalImport}}";
+{{#if hasQuery}}import { z } from "zod";
+
+import { withQueryString } from "@/lib/api/query-string";
+{{/if}}import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
+
+{{#if hasQuery}}export type {{queryTypeName}} = z.infer<typeof {{orvalQuery}}>;
+
+{{/if}}/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Same-origin BFF read for {{title}}. Validates with the Orval schema
+ * {{orvalSchema}}. Do not cast the parsed result. Owned by `use-{{name}}.lit.ts`.
+ */
+export function {{camelName}}Path({{#if hasPathParams}}{{pathParamsSignature}}{{#if hasQuery}}, {{/if}}{{/if}}{{#if hasQuery}}query?: {{queryTypeName}}{{/if}}): string {
+{{#if hasQuery}}  return withQueryString({{fetchPathExpression}}, {{orvalQuery}}.parse(query ?? {}));
+{{else}}  return {{fetchPathExpression}};
+{{/if}}
+}
+
+export async function {{loadName}}(
+  request: RequestJsonFn,
+  {{#if hasPathParams}}{{pathParamsSignature}},
+  {{/if}}{{#if hasQuery}}query?: {{queryTypeName}},
+  {{/if}}signal?: AbortSignal,
+) {
+  return request({
+    path: {{camelName}}Path({{#if hasPathParams}}{{pathParamsCall}}{{#if hasQuery}}, {{/if}}{{/if}}{{#if hasQuery}}query{{/if}}),
+    schema: {{orvalSchema}},
+    signal,
+  });
+}
+
+export function {{fetchName}}(
+  {{#if hasPathParams}}{{pathParamsSignature}},
+  {{/if}}{{#if hasQuery}}query?: {{queryTypeName}},
+  {{/if}}signal?: AbortSignal,
+) {
+  return {{loadName}}(
+    requestJson,
+    {{#if hasPathParams}}{{pathParamsCall}},
+    {{/if}}{{#if hasQuery}}query,
+    {{/if}}signal,
+  );
+}

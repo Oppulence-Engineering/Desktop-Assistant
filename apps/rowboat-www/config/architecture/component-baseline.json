@@ -1,7 +1,12 @@
 {
   "schemaVersion": 1,
   "standardPaths": ["components/features/", "/_components/"],
-  "managedPaths": ["components/ai-elements/", "components/dev/", "components/providers/"],
+  "managedPaths": [
+    "components/ai-elements/",
+    "components/dev/",
+    "components/providers/",
+    "components/sim/"
+  ],
   "legacyFiles": [
     "components/actions/actions-view.tsx",
     "components/actions/audit-sheet.tsx",
@@ -14,6 +19,7 @@
     "components/command-palette.tsx",
     "components/json-editor.tsx",
     "components/legal/current-year.tsx",
+    "components/legal/legal-blocks.tsx",
     "components/legal/legal-document.tsx",
     "components/markdown-viewer.tsx",
     "components/revenue-panel.tsx",

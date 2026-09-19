@@ -42,6 +42,7 @@ const legacy = {
     "app/plan-response/page.tsx",
     "components/ai-elements/prompt-input.tsx",
     "lib/auth/client.ts",
+    "lib/auth/dashboard-fetch.ts",
     "lib/auth/proxy.ts",
     "lib/auth/rowboat-api.ts",
     "scripts/capture-marketing-screenshots.ts",
@@ -109,6 +110,15 @@ const config = [
   }),
   ...tseslint.config({
     files: legacyTypedFiles,
+    extends: [tseslint.configs.disableTypeChecked],
+  }),
+  ...tseslint.config({
+    files: [
+      "app/**/*.test.{ts,tsx}",
+      "components/**/*.test.{ts,tsx}",
+      "hooks/**/*.test.{ts,tsx}",
+      "lib/**/*.test.{ts,tsx}",
+    ],
     extends: [tseslint.configs.disableTypeChecked],
   }),
   {

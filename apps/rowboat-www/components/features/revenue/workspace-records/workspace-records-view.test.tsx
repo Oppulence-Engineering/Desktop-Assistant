@@ -8,20 +8,23 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  listConsoleResources: vi.fn(),
-  listRelationships: vi.fn(),
-  getRelationshipTimeline: vi.fn(),
+  fetchConsoleResources: vi.fn(),
+  fetchWorkspaceNotes: vi.fn(),
 }));
 
 vi.mock("@/lib/console", () => ({
   createConsoleResource: vi.fn(),
   deleteConsoleResource: vi.fn(),
-  listConsoleResources: mocks.listConsoleResources,
   patchConsoleResource: vi.fn(),
 }));
+vi.mock("@/hooks/queries/utils/fetch-console", () => ({
+  fetchConsoleResources: mocks.fetchConsoleResources,
+  fetchConsolePreferences: vi.fn(),
+}));
+vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
+  fetchWorkspaceNotes: mocks.fetchWorkspaceNotes,
+}));
 vi.mock("@/lib/revenue", () => ({
-  listRelationships: mocks.listRelationships,
-  getRelationshipTimeline: mocks.getRelationshipTimeline,
   relativeTime: () => "now",
 }));
 vi.mock("@oppulence/ui/components/dialog", () => ({
@@ -52,24 +55,22 @@ function renderNotes() {
 
 describe("durable note templates and favorites", () => {
   beforeEach(() => {
-    mocks.listRelationships.mockResolvedValue([
-      { id: "relationship-1", kind: "organization", displayName: "Acme" },
-    ]);
-    mocks.getRelationshipTimeline.mockResolvedValue([
-      {
-        source: "desktop_note",
-        externalId: "event-1",
-        eventType: "note",
-        occurredAt: "2026-09-17T12:00:00Z",
-        summary: "Account review",
-        normalizedFacts: {
-          noteId: "note-1",
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-1",
           title: "Account review",
           body: "Follow up",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-09-17T12:00:00Z",
+          eventType: "note",
         },
-      },
-    ]);
-    mocks.listConsoleResources.mockImplementation(async (kind: string) =>
+      ],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+    });
+    mocks.fetchConsoleResources.mockImplementation(async (kind: string) =>
       kind === "note_template"
         ? [
             {

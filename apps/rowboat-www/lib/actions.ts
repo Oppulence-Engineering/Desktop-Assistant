@@ -5,6 +5,8 @@
 // server-side and bounces the browser back through WorkOS on a 401. Mirrors
 // lib/revenue.ts.
 
+import { fetchPendingActionProposals } from "@/hooks/queries/utils/fetch-action-proposals";
+import { DashboardRequestError } from "@/lib/api/request-json";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import type { ActionProposal, ApproveResult, AuditChain } from "@/types/actions";
 
@@ -48,10 +50,16 @@ const post = (path: string, body?: unknown) =>
   call(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
 /** The operator's pending action proposals awaiting approval. */
-export const listPending = () =>
-  call<{ proposals?: ActionProposal[] }>("/action-proposals?status=pending").then(
-    (r) => r.proposals ?? [],
-  );
+export const listPending = async (signal?: AbortSignal) => {
+  try {
+    return await fetchPendingActionProposals(signal);
+  } catch (error) {
+    if (error instanceof DashboardRequestError) {
+      throw new ActionAPIError(error.message, error.status, error.code);
+    }
+    throw error;
+  }
+};
 
 export const getProposal = (id: string) => call<ActionProposal>(`/action-proposals/${id}`);
 

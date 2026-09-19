@@ -2,16 +2,25 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const revenue = vi.hoisted(() => ({
-  listRelationships: vi.fn(),
-  semanticSearch: vi.fn(),
+const fetchers = vi.hoisted(() => ({
+  fetchRelationships: vi.fn(),
+  fetchSemanticSearch: vi.fn(),
+  fetchIdentityCandidates: vi.fn(),
+  fetchRelationshipAttention: vi.fn(),
+  fetchRelationshipGraph: vi.fn(),
+  fetchPersons: vi.fn(),
 }));
 
-vi.mock("@/lib/revenue", () => revenue);
+vi.mock("@/hooks/queries/utils/fetch-relationships", () => fetchers);
+vi.mock("@oppulence/ui/components/spinner", () => ({
+  Spinner: () => <span>Searching…</span>,
+}));
 vi.mock("@/components/app-shell", () => ({
   SETTINGS_SECTIONS: [],
   useThemePreference: () => ({ setTheme: vi.fn() }),
@@ -51,6 +60,15 @@ vi.mock("@oppulence/ui/components/command", () => ({
 
 import { CommandPalette } from "@/components/command-palette";
 
+function renderPalette(props: ComponentProps<typeof CommandPalette>) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <CommandPalette {...props} />
+    </QueryClientProvider>,
+  );
+}
+
 const requiredProps = {
   agents: [],
   onNavigateChat: vi.fn(),
@@ -72,7 +90,7 @@ afterEach(() => {
 describe("CommandPalette semantic mail search", () => {
   it("uses an explicit mail mode and renders evidence metadata", async () => {
     const user = userEvent.setup();
-    revenue.semanticSearch.mockResolvedValue({
+    fetchers.fetchSemanticSearch.mockResolvedValue({
       available: true,
       matches: [
         {
@@ -86,12 +104,12 @@ describe("CommandPalette semantic mail search", () => {
       ],
     });
 
-    render(<CommandPalette {...requiredProps} />);
+    renderPalette(requiredProps);
     await user.click(screen.getByRole("button", { name: /search mail/i }));
     await user.type(screen.getByRole("textbox", { name: "Command search" }), "launch promise");
 
     await waitFor(() => {
-      expect(revenue.semanticSearch).toHaveBeenCalledWith(
+      expect(fetchers.fetchSemanticSearch).toHaveBeenCalledWith(
         "launch promise",
         expect.any(AbortSignal),
       );
@@ -102,9 +120,9 @@ describe("CommandPalette semantic mail search", () => {
 
   it("distinguishes an unavailable workspace capability from a search failure", async () => {
     const user = userEvent.setup();
-    revenue.semanticSearch.mockResolvedValue({ available: false, matches: [] });
+    fetchers.fetchSemanticSearch.mockResolvedValue({ available: false, matches: [] });
 
-    render(<CommandPalette {...requiredProps} />);
+    renderPalette(requiredProps);
     await user.click(screen.getByRole("button", { name: /search mail/i }));
     await user.type(screen.getByRole("textbox", { name: "Command search" }), "renewal risk");
 

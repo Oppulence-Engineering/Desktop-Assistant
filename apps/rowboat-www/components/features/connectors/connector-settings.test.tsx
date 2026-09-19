@@ -2,13 +2,26 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderWithQuery } from "@/quality/test-support/render-query";
+
 import type { Connector } from "@/lib/api/generated/client/model";
+import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
+import type { RelationshipSourceStatus } from "@/types/revenue";
 
 import { ConnectorSettings } from "./connector-settings";
+
+const { fetchRelationshipSourceStatusesMock } = vi.hoisted(() => ({
+  fetchRelationshipSourceStatusesMock: vi.fn(async () => [] as RelationshipSourceStatus[]),
+}));
+
+vi.mock("@/hooks/queries/utils/fetch-relationship-sources", () => ({
+  fetchRelationshipSourceStatuses: fetchRelationshipSourceStatusesMock,
+  fetchRelationshipSources: vi.fn(async () => []),
+}));
 
 const requiredScope = {
   description: "Read relationship email evidence.",
@@ -93,12 +106,17 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  fetchRelationshipSourceStatusesMock.mockReset();
+  fetchRelationshipSourceStatusesMock.mockResolvedValue([]);
   vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/app/settings?settings=connections");
 });
 
 describe("hosted connector settings", () => {
   it("explains stale sync without presenting reauthorization as the normal action", async () => {
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
+      { source: "google", status: "stale" } as RelationshipSourceStatus,
+    ]);
     const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       void _init;
       const url = String(input);
@@ -113,9 +131,7 @@ describe("hosted connector settings", () => {
               },
             ],
           }
-        : url.includes("/relationship-sources/status")
-          ? { sources: [{ source: "google", status: "stale" }] }
-          : { connectors: [] };
+        : { connectors: [] };
       return new Response(JSON.stringify(body), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -125,7 +141,7 @@ describe("hosted connector settings", () => {
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("confirm", confirm);
 
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     const changeAccess = await screen.findByRole("button", { name: "Change Google access" });
     expect(screen.getByText(/Source data is delayed; reauthorizing is not required/)).toBeVisible();
@@ -138,7 +154,7 @@ describe("hosted connector settings", () => {
 
   it("starts from the actual Connect control with explicit required scopes", async () => {
     const fetchMock = mockConnectors(connector());
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     const row = await screen.findByTestId("connector-google");
     const connect = within(row).getByRole("button", { name: "Connect Google" });
@@ -160,7 +176,7 @@ describe("hosted connector settings", () => {
 
   it("submits selected optional scopes while retaining required permissions", async () => {
     const fetchMock = mockConnectors(connector());
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     const row = await screen.findByTestId("connector-google");
     await userEvent.click(within(row).getByText("Permissions"));
@@ -187,7 +203,7 @@ describe("hosted connector settings", () => {
         health: "unavailable",
       }),
     );
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByRole("button", { name: "Connect Google" })).toBeDisabled();
@@ -208,7 +224,7 @@ describe("hosted connector settings", () => {
         grantedScopes: [requiredScope],
       }),
     );
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     expect(
       await screen.findByText(/Authorization was claimed and the connection is active/),
@@ -273,7 +289,7 @@ describe("Google grant claimed in the web app", () => {
       "confirm",
       vi.fn(() => true),
     );
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Change Google access" }));
 
@@ -295,7 +311,7 @@ describe("Google grant claimed in the web app", () => {
       "/app/settings?settings=connections&google_session=s1&google_status=success",
     );
     const calls = mockDashboard();
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     await vi.waitFor(() => {
       expect(calls.some((call) => call.includes("/google-oauth"))).toBe(true);
@@ -316,7 +332,7 @@ describe("Google grant claimed in the web app", () => {
       ],
       toolkits: [{ slug: "github", name: "GitHub via Composio", managedAuth: true }],
     });
-    render(<ConnectorSettings />);
+    renderWithQuery(<ConnectorSettings />);
 
     expect(await screen.findByText("GitHub via Composio")).toBeInTheDocument();
     expect(await screen.findByText("Stripe")).toBeInTheDocument();

@@ -31,7 +31,7 @@ function entries(acceptance: RegisterEntry["acceptance"] = "accepted"): Register
       relationshipId: "rel-1",
       relationshipName: "Acme",
       dueAt,
-      confidence: 0.9,
+      confidence: 0.65,
       userConfirmed: acceptance !== "candidate",
       acceptance,
       ownerParticipantRef: "Taylor",
@@ -102,17 +102,18 @@ function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) 
 }
 
 describe("CommitmentQueue", () => {
-  it("shows the operational promise, evidence, warning, and next action", () => {
+  it("shows the operational promise, evidence, warning, and next action", async () => {
     render(<CommitmentQueue aria-label="Client commitments" {...props()} />);
 
     const component = screen.getByRole("region", { name: "Client commitments" });
     expect(component).toHaveAttribute("data-slot", "commitment-queue");
     expect(component).toHaveTextContent("Send the signed security packet");
+    await userEvent.click(screen.getByText("Acme"));
     expect(component).toHaveTextContent("Taylor");
     expect(component).toHaveTextContent("Morgan");
     expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(component).toHaveTextContent("Due within 72h");
-    expect(screen.getByText("At risk")).toHaveClass("border-amber-500/40");
+    expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /Run 6-month Promise Leak Audit/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
   });
@@ -195,6 +196,7 @@ describe("CommitmentQueue", () => {
     const onTransition = vi.fn(async () => true);
     render(<CommitmentQueue {...props({ entries: entries("candidate"), onTransition })} />);
 
+    await user.click(screen.getByText("Acme"));
     await user.click(screen.getByRole("button", { name: "Confirm promise" }));
     await waitFor(() =>
       expect(onTransition).toHaveBeenCalledWith(

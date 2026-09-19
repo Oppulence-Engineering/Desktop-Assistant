@@ -5,14 +5,13 @@ import "client-only";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ARTIFACT_DETAIL_STALE_TIME, artifactKeys } from "@/hooks/queries/utils/artifact-keys";
 import {
   loadDashboardArtifact,
   saveDashboardArtifact,
   type DashboardArtifact,
 } from "@/lib/dashboard-artifacts";
 import type { SelectedResource } from "@/lib/dashboard-resource";
-
-const ARTIFACT_QUERY_KEY = "dashboard-artifact";
 
 function resourceKey(resource: SelectedResource): string {
   return `${resource.kind}:${resource.name}`;
@@ -25,7 +24,7 @@ export function useDashboardArtifact(resource: SelectedResource | null) {
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const key = resource ? resourceKey(resource) : "";
   const queryKey = useMemo(
-    () => [ARTIFACT_QUERY_KEY, resource?.kind, resource?.name] as const,
+    () => artifactKeys.detail(resource?.kind, resource?.name),
     [resource?.kind, resource?.name],
   );
   const query = useQuery({
@@ -35,6 +34,7 @@ export function useDashboardArtifact(resource: SelectedResource | null) {
       return loadDashboardArtifact(resource);
     },
     enabled: resource !== null,
+    staleTime: ARTIFACT_DETAIL_STALE_TIME,
   });
 
   const artifact = query.data;

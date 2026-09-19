@@ -8,25 +8,32 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WorkspaceView } from "@/components/revenue/workspace-view";
-import { listCloudRuns } from "@/lib/cloud-workflows";
-import { listRelationshipSourceStatuses, resyncRelationshipSource } from "@/lib/revenue";
+import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
+import { fetchRelationshipRefreshBlocker } from "@/hooks/queries/utils/fetch-workflows";
+import { resyncRelationshipSource } from "@/lib/revenue";
 import type { RelationshipSourceStatus } from "@/types/revenue";
 
 vi.mock("@/components/features/connectors/connector-settings", () => ({
   ConnectorSettings: () => <div data-testid="connector-settings">Connectors</div>,
 }));
 
+vi.mock("@/hooks/queries/utils/fetch-relationship-sources", () => ({
+  fetchRelationshipSourceStatuses: vi.fn(),
+  loadRelationshipSourceStatuses: vi.fn(),
+}));
+
 vi.mock("@/lib/revenue", () => ({
   linkWorkspace: vi.fn(),
-  listRelationshipSourceStatuses: vi.fn(),
   relativeTime: vi.fn(),
   resyncRelationshipSource: vi.fn(),
   RevenueAPIError: class RevenueAPIError extends Error {},
-  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY: ["relationship-source-statuses"],
 }));
 
-vi.mock("@/lib/cloud-workflows", () => ({
-  listCloudRuns: vi.fn(),
+vi.mock("@/hooks/queries/utils/fetch-workflows", () => ({
+  fetchRelationshipRefreshBlocker: vi.fn(),
+  fetchWorkflowRuns: vi.fn(),
+  fetchWorkflowTasks: vi.fn(),
+  fetchWorkflowTemplates: vi.fn(),
 }));
 
 const incomplete: RelationshipSourceStatus = {
@@ -62,8 +69,8 @@ function renderWorkspace(overrides?: Partial<React.ComponentProps<typeof Workspa
 }
 
 beforeEach(() => {
-  vi.mocked(listCloudRuns).mockResolvedValue({ runs: [] });
-  vi.mocked(listRelationshipSourceStatuses).mockResolvedValue([
+  vi.mocked(fetchRelationshipRefreshBlocker).mockResolvedValue("");
+  vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
     {
       ...incomplete,
       connectionId: "desktop-1",
@@ -75,11 +82,26 @@ beforeEach(() => {
     },
     incomplete,
   ]);
-  vi.mocked(resyncRelationshipSource).mockResolvedValue({
-    ...incomplete,
-    status: "backfilling",
-    backfillPhase: "queued",
-    completeness: "rebuilding",
+  vi.mocked(resyncRelationshipSource).mockImplementation(async () => {
+    const updated = {
+      ...incomplete,
+      status: "backfilling" as const,
+      backfillPhase: "queued",
+      completeness: "rebuilding",
+    };
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
+      {
+        ...incomplete,
+        connectionId: "desktop-1",
+        source: "desktop_note",
+        sourceAccountId: "default",
+        status: "live",
+        backfillPhase: "idle",
+        completeness: "complete",
+      },
+      updated,
+    ]);
+    return updated;
   });
 });
 
@@ -110,7 +132,7 @@ describe("WorkspaceView", () => {
   });
 
   it("distinguishes stale freshness from an incomplete history sync", async () => {
-    vi.mocked(listRelationshipSourceStatuses).mockResolvedValue([
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
       { ...incomplete, status: "stale", backfillPhase: "live", completeness: "stale" },
     ]);
 
@@ -130,39 +152,15 @@ describe("WorkspaceView", () => {
   ])(
     "explains when stale automation needs %s instead of a Google reconnect",
     async (_, errorCode, message) => {
-      vi.mocked(listRelationshipSourceStatuses).mockResolvedValue([
+      vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
         { ...incomplete, status: "stale", backfillPhase: "live", completeness: "stale" },
       ]);
-      vi.mocked(listCloudRuns).mockResolvedValue({
-        runs: [
-          {
-            id: "run-1",
-            runId: "run-1",
-            previousRunId: "",
-            retryOfRunId: "",
-            slug: "oppulence-relationship-refresh",
-            trigger: "cron",
-            status: "failed",
-            executor: "api",
-            attempt: 1,
-            requestedContext: "",
-            summary: "",
-            error: "insufficient credits for cloud run preflight",
-            errorCode,
-            errorDetails: "",
-            temporalWorkflowId: "",
-            progressMessage: "",
-            createdAt: "2026-09-10T01:45:00Z",
-            updatedAt: "2026-09-10T01:45:00Z",
-            revision: 1,
-          },
-        ],
-      });
+      vi.mocked(fetchRelationshipRefreshBlocker).mockResolvedValue(errorCode);
 
       renderWorkspace();
 
       expect(await screen.findByText(message)).toHaveTextContent(/reconnecting will not fix it/i);
-      expect(listCloudRuns).toHaveBeenCalledWith({ slug: "oppulence-relationship-refresh" });
+      expect(fetchRelationshipRefreshBlocker).toHaveBeenCalled();
     },
   );
 });

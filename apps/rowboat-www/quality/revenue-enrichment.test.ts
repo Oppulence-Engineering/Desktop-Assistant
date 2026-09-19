@@ -4,9 +4,11 @@ const mocks = vi.hoisted(() => ({
   dashboardFetch: vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(),
 }));
 
-vi.mock("@/lib/auth/client", () => ({
-  dashboardFetch: mocks.dashboardFetch,
+vi.mock("@/lib/auth/dashboard-fetch", () => ({
+  dashboardRequest: mocks.dashboardFetch,
   toDashboardAPIPath: (path: string) => path,
+  redirectBrowserIfUnauthorized: () => undefined,
+  loginURL: () => "/login",
 }));
 
 import {

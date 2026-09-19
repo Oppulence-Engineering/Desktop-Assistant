@@ -2,8 +2,10 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithQuery } from "@/quality/test-support/render-query";
 
 import { CommunicationPrivacySettings } from "./communication-privacy-settings";
 
@@ -22,7 +24,7 @@ afterEach(() => {
 
 describe("CommunicationPrivacySettings", () => {
   it("renders the mailbox privacy controls shell", () => {
-    render(<CommunicationPrivacySettings />);
+    renderWithQuery(<CommunicationPrivacySettings />);
     expect(screen.getByText("Mailbox account")).toBeInTheDocument();
     expect(screen.getByLabelText("Mailbox account email")).toBeInTheDocument();
   });

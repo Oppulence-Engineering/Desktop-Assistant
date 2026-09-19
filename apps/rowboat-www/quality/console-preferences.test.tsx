@@ -2,10 +2,11 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithQuery } from "@/quality/test-support/render-query";
 
 const mocks = vi.hoisted(() => ({
   dashboardFetch: vi.fn(),
@@ -14,8 +15,14 @@ const mocks = vi.hoisted(() => ({
   setConsent: vi.fn(),
 }));
 
+vi.mock("@/hooks/queries/utils/fetch-console", () => ({
+  fetchConsolePreferences: mocks.getPreferences,
+  fetchConsoleResources: vi.fn().mockResolvedValue([]),
+}));
+vi.mock("@/hooks/queries/utils/fetch-agents", () => ({
+  fetchAgentSummaries: vi.fn().mockResolvedValue([{ slug: "reviewer", name: "Reviewer" }]),
+}));
 vi.mock("@/lib/console", () => ({
-  getConsolePreferences: mocks.getPreferences,
   patchConsolePreferences: mocks.patchPreferences,
 }));
 vi.mock("@/lib/analytics", () => ({
@@ -42,15 +49,12 @@ const preferences = {
 };
 
 function renderPreferences() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={client}>
-      <SettingsView
-        onNavigate={vi.fn()}
-        section="preferences"
-        session={{ user: { permissions: [] } }}
-      />
-    </QueryClientProvider>,
+  return renderWithQuery(
+    <SettingsView
+      onNavigate={vi.fn()}
+      section="preferences"
+      session={{ user: { permissions: [] } }}
+    />,
   );
 }
 

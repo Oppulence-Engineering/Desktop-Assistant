@@ -105,6 +105,7 @@ export function TaskCreateDialog({
   return (
     <ChipModal
       className="sim-landing-root"
+      data-slot="task-create-dialog"
       dismissDisabled={busy}
       open={open}
       size="xl"

@@ -98,11 +98,7 @@ import {
   getRelationshipCommunicationTimeline,
   getRelationshipTimeline,
   ingestRelationshipObservations,
-  listRelationships,
   listIdentityCandidates,
-  listRelationshipAttention,
-  listRelationshipSources,
-  listRelationshipSourceStatuses,
   disconnectRelationshipSource,
   enrichPendingCompanies,
   enrichPendingPersons,
@@ -143,6 +139,19 @@ import type {
   ResearchEstimate,
   ResearchStatus,
 } from "@/types/revenue";
+import { DashboardRequestError } from "@/lib/api/request-json";
+import {
+  useIdentityCandidates,
+  useRelationshipAttention,
+  useRelationships,
+} from "@/hooks/queries/use-relationships";
+import {
+  useRelationshipSourceInventory,
+  useRelationshipSourceStatuses,
+} from "@/hooks/queries/use-relationship-sources";
+import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
+import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 const LIFECYCLE_OPTIONS = [
@@ -412,19 +421,11 @@ export function RelationshipsView({
   onNotice: (m: string) => void;
   onOpenConnectors?: () => void;
 }) {
-  const [rows, setRows] = React.useState<RevenueRelationship[]>([]);
-  const [sources, setSources] = React.useState<RelationshipSourceStatus[]>([]);
-  const [identityCandidates, setIdentityCandidates] = React.useState<
-    RelationshipIdentityCandidate[]
-  >([]);
-  const [attention, setAttention] = React.useState<RelationshipAttentionItem[]>([]);
-  const [sourceInventory, setSourceInventory] = React.useState<RelationshipSourceInventoryItem[]>(
-    [],
-  );
-  const [loading, setLoading] = React.useState(true);
+  const queryClient = useQueryClient();
   const [detail, setDetail] = React.useState<string | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [query, setQuery] = React.useState("");
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
   const [health, setHealth] = React.useState("all");
   const [lifecycle, setLifecycle] = React.useState("all");
   const [surface, setSurface] = React.useState<"list" | "graph">("list");
@@ -433,6 +434,29 @@ export function RelationshipsView({
     "employees",
     "funding",
   ]);
+  const filters = {
+    q: debouncedQuery || undefined,
+    health: health === "all" ? undefined : health,
+    lifecycle: lifecycle === "all" ? undefined : lifecycle,
+  };
+  const relationshipsQuery = useRelationships(filters);
+  const sourcesQuery = useRelationshipSourceStatuses();
+  const inventoryQuery = useRelationshipSourceInventory();
+  const pendingQuery = useIdentityCandidates("pending");
+  const deferredQuery = useIdentityCandidates("deferred");
+  const attentionQuery = useRelationshipAttention("open");
+  const rows = relationshipsQuery.data ?? [];
+  const sources = sourcesQuery.data ?? [];
+  const sourceInventory = inventoryQuery.data ?? [];
+  const identityCandidates = [...(pendingQuery.data ?? []), ...(deferredQuery.data ?? [])];
+  const attention = attentionQuery.data ?? [];
+  const loading =
+    relationshipsQuery.isPending ||
+    sourcesQuery.isPending ||
+    inventoryQuery.isPending ||
+    pendingQuery.isPending ||
+    deferredQuery.isPending ||
+    attentionQuery.isPending;
   const hasConnectedSource = sources.some((source) =>
     ["connected", "backfilling", "live"].includes(source.status),
   );
@@ -442,50 +466,48 @@ export function RelationshipsView({
   );
 
   React.useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 180);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  React.useEffect(() => {
     if (new URLSearchParams(window.location.search).get("graph") !== "1") return;
     const timer = window.setTimeout(() => setSurface("graph"), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
   const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const [
-        relationships,
-        sourceStatuses,
-        inventory,
-        pendingCandidates,
-        deferredCandidates,
-        attentionItems,
-      ] = await Promise.all([
-        listRelationships({
-          q: query.trim() || undefined,
-          health: health === "all" ? undefined : health,
-          lifecycle: lifecycle === "all" ? undefined : lifecycle,
-        }),
-        listRelationshipSourceStatuses(),
-        listRelationshipSources(),
-        listIdentityCandidates("pending"),
-        listIdentityCandidates("deferred"),
-        listRelationshipAttention("open"),
-      ]);
-      setRows(relationships);
-      setSources(sourceStatuses);
-      setSourceInventory(inventory);
-      setIdentityCandidates([...pendingCandidates, ...deferredCandidates]);
-      setAttention(attentionItems);
-    } catch (e) {
-      if (e instanceof RevenueAPIError && e.status === 404) return;
-      onError(errMessage(e, "Could not load relationship intelligence."));
-    } finally {
-      setLoading(false);
-    }
-  }, [health, lifecycle, onError, query]);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
+      queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.all }),
+    ]);
+  }, [queryClient]);
 
   React.useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 180);
-    return () => window.clearTimeout(timer);
-  }, [load]);
+    const error =
+      relationshipsQuery.error ??
+      sourcesQuery.error ??
+      inventoryQuery.error ??
+      pendingQuery.error ??
+      deferredQuery.error ??
+      attentionQuery.error;
+    if (!error) return;
+    if (
+      (error instanceof RevenueAPIError || error instanceof DashboardRequestError) &&
+      error.status === 404
+    ) {
+      return;
+    }
+    onError(errMessage(error, "Could not load relationship intelligence."));
+  }, [
+    attentionQuery.error,
+    deferredQuery.error,
+    inventoryQuery.error,
+    onError,
+    pendingQuery.error,
+    relationshipsQuery.error,
+    sourcesQuery.error,
+  ]);
 
   const exportDiagnostics = React.useCallback(async () => {
     try {

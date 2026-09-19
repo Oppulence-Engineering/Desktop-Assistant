@@ -1,0 +1,37 @@
+import type { Meta, StoryObj } from "@storybook/react";
+
+import { {{pascalName}} } from "./{{name}}";
+import { {{schemaName}} } from "./{{name}}.schema";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Visual contract for {{pascalName}}. Domain args are built from the Zod
+ * schema so Storybook fixtures stay honest.
+ */
+const meta = {
+  title: "{{storyTitle}}",
+  component: {{pascalName}},
+  tags: ["autodocs"],
+} satisfies Meta<typeof {{pascalName}}>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  args: {
+    "aria-label": "Example {{name}}",
+    children: "Content",
+    ...{{schemaName}}.parse({
+{{#each fields}}
+      {{name}}: {{sample}},
+{{/each}}
+    }),
+  },
+};
+
+export const Empty: Story = {
+  args: {
+    "aria-label": "Empty {{name}}",
+  },
+};

@@ -14,7 +14,10 @@ import {
   Sun,
   type Icon as PhosphorIcon,
 } from "@/lib/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAgentSummaries } from "@/hooks/queries/use-agents";
+import { useConsolePreferences as useConsolePreferencesQuery } from "@/hooks/queries/use-console";
+import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 
 import {
   SETTINGS_SECTIONS,
@@ -27,7 +30,6 @@ import { CommunicationPrivacySettings } from "@/components/features/connectors/c
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
 import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics";
 import {
-  getConsolePreferences,
   patchConsolePreferences,
   type ConsolePreferences,
   type ConsolePreferencesPatch,
@@ -49,22 +51,16 @@ import {
 } from "@oppulence/ui/components/select";
 import { Switch } from "@oppulence/ui/components/switch";
 import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
-import { dashboardFetch } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
-
-const CONSOLE_PREFERENCES_QUERY_KEY = ["console", "preferences"] as const;
 
 function useConsolePreferences() {
   const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: CONSOLE_PREFERENCES_QUERY_KEY,
-    queryFn: ({ signal }) => getConsolePreferences(signal),
-  });
+  const query = useConsolePreferencesQuery();
   const mutation = useMutation({
     mutationFn: (patch: ConsolePreferencesPatch) => patchConsolePreferences(patch),
     onSuccess: (preferences) => {
-      queryClient.setQueryData<ConsolePreferences>(CONSOLE_PREFERENCES_QUERY_KEY, preferences);
-      void queryClient.invalidateQueries({ queryKey: CONSOLE_PREFERENCES_QUERY_KEY });
+      queryClient.setQueryData<ConsolePreferences>(consoleKeys.preferences(), preferences);
+      void queryClient.invalidateQueries({ queryKey: consoleKeys.preferences() });
     },
   });
   return { query, mutation };
@@ -355,18 +351,10 @@ function ProfileCard() {
 
 function DefaultsCard() {
   const { query, mutation } = useConsolePreferences();
-  const { items, state } = useJsonList("/api/rowboat/v1/agents", (data) => {
-    const record = (data ?? {}) as Record<string, unknown>;
-    return Array.isArray(record.agents) ? record.agents : [];
-  });
+  const agentsQuery = useAgentSummaries();
+  const state = agentsQuery.isPending ? "loading" : agentsQuery.isError ? "error" : "ready";
   // The chat session API is keyed by slug, so prefer it over the display name.
-  const agentNames = items
-    .map((item) => {
-      if (typeof item === "string") return item;
-      const record = (item ?? {}) as Record<string, unknown>;
-      return typeof record.slug === "string" ? record.slug : nameOf(item);
-    })
-    .filter(Boolean);
+  const agentNames = (agentsQuery.data ?? []).map((agent) => agent.slug).filter(Boolean);
 
   const [agent, setAgent] = React.useState("");
   const [initial, setInitial] = React.useState("");
@@ -517,46 +505,6 @@ function AppearanceSection() {
       </SettingsRow>
     </>
   );
-}
-
-function useJsonList(path: string, pick: (data: unknown) => unknown[]) {
-  const [items, setItems] = React.useState<unknown[]>([]);
-  const [state, setState] = React.useState<"loading" | "ready" | "error">("loading");
-
-  React.useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await dashboardFetch(path);
-        if (!res.ok) throw new Error(`${res.status}`);
-        const data = await res.json();
-        if (!cancelled) {
-          setItems(pick(data));
-          setState("ready");
-        }
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path]);
-
-  return { items, state };
-}
-
-function nameOf(item: unknown): string {
-  if (typeof item === "string") return item;
-  if (item && typeof item === "object") {
-    const record = item as Record<string, unknown>;
-    for (const key of ["id", "name", "slug", "model"]) {
-      if (typeof record[key] === "string") return record[key] as string;
-    }
-  }
-  return JSON.stringify(item);
 }
 
 export function PlanSection({ session }: { session: SessionShape }) {

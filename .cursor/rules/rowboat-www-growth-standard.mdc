@@ -1,0 +1,23 @@
+---
+description: rowboat-www features must be generated; never invent a parallel layout
+alwaysApply: true
+---
+
+# rowboat-www feature work
+
+Product code in `apps/rowboat-www` has one door. Agents do not invent pages, components, hooks, fetchers, stores, schemas, or stories by hand.
+
+```bash
+cd apps/rowboat-www
+npm run gen -- feature --domain forecasts --route forecasts --name forecasts --title "Forecasts"
+npm run gen -- hook --operation listConnectors
+npm run gen -- mutation --operation createRevenueAction
+```
+
+- MUST run `npm run gen` first, then fill only `/* implementation */`.
+- MUST NOT hand-create the file tree or a second fetch stack (no tRPC, no local API Zod stubs).
+- MUST NOT add surfaces to `product-dashboard-client.tsx`.
+- Shared primitives: `npm run ui:add`. OpenAPI shapes: Orval + `--operation`.
+- If `gen` cannot express the change, stop and say so. Do not invent a parallel layout.
+
+CI/pre-commit WEB023–WEB029 reject new product units that lack `@oppulence-gen` or a sibling `*.lit.ts`. Playbook: `apps/rowboat-www/AGENTS.md` and `docs/growth-standard.md`.

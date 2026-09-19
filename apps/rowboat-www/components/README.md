@@ -5,12 +5,14 @@ New components have one of three owners. Choose the narrowest owner that fits.
 | Owner            | Location                                       | Creation command                                                          | May contain                                           |
 | ---------------- | ---------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- |
 | Shared primitive | `packages/ui/src/components`                   | `npm run ui:add -- <name>`                                                | Reusable presentation and interaction primitives only |
-| Product feature  | `components/features/<domain>/<name>`          | `npm run component:new -- --kind feature --domain <domain> --name <name>` | One domain's reusable product UI                      |
-| Route-private    | `app/(product)/app/<route>/_components/<name>` | `npm run component:new -- --kind route --route <route> --name <name>`     | UI used only by one route subtree                     |
+| Product feature  | `components/features/<domain>/<name>`          | `npm run gen -- component --kind feature --domain <domain> --name <name>` | One domain's reusable product UI                      |
+| Route-private    | `app/(product)/app/<route>/_components/<name>` | `npm run gen -- component --kind route --route <route> --name <name>`     | UI used only by one route subtree                     |
 
 Use kebab-case for paths and PascalCase named exports. Import the concrete file directly; do not add
-barrel `index.ts` files. Product components receive a colocated Testing Library test. Add `--client`
-only when the component requires state, effects, event handlers, context, or browser APIs.
+barrel `index.ts` files. Product components receive a colocated Testing Library test, Zod props
+schema, living interface template, and Storybook story. Add `--client` only when the component
+requires state, effects, event handlers, context, or browser APIs. Domain props are Zod schemas;
+native host props may intersect `ComponentPropsWithoutRef`. See `docs/growth-standard.md`.
 
 ## Component contract
 
@@ -20,7 +22,9 @@ only when the component requires state, effects, event handlers, context, or bro
   default exports.
 - Forward native element props, `className`, and accessibility attributes to the semantic root.
 - Put a stable `data-slot` on the root and compose classes with `cn()`.
-- Use `@oppulence/ui` primitives before introducing raw interactive elements or another UI library.
+- Use `@sim/emcn` for `/app` and marketing product chrome when the primitive
+  exists. Use `@oppulence/ui` only when emcn has no equivalent. Do not mix
+  both kits on one surface.
 - Use design tokens (`background`, `foreground`, `muted`, `border`, `ring`, etc.) instead of
   feature-specific hex colors.
 - Keep network access, persistence, authentication, and domain orchestration outside presentation
@@ -35,11 +39,12 @@ to those legacy locations.
 ## Examples
 
 ```bash
+npm run gen -- component --kind feature --domain agents --name agent-card
+npm run gen -- component --kind feature --domain workflows --name schedule-form --client
+npm run gen -- component --kind route --route agents --name agent-empty-state
+npm run gen -- component --kind route --route revenue/relationships --name relationship-toolbar --client
+npm run gen -- component --kind feature --domain agents --name agent-card --dry-run
 npm run component:new -- --kind feature --domain agents --name agent-card
-npm run component:new -- --kind feature --domain workflows --name schedule-form --client
-npm run component:new -- --kind route --route agents --name agent-empty-state
-npm run component:new -- --kind route --route revenue/relationships --name relationship-toolbar --client
-npm run component:new -- --kind feature --domain agents --name agent-card --dry-run
 ```
 
 Shared primitives use the repository's Radix-based shadcn CLI (`shadcn@4` in

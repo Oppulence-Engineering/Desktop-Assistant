@@ -1,34 +1,33 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Sparkle, WarningCircle } from "@/lib/icons";
+import { useCommitmentRegister } from "@/hooks/queries/use-commitments";
+import { useReportScan, useReportScanList } from "@/hooks/queries/use-report";
+import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
+import { useWorkspace } from "@/hooks/queries/use-workspace";
+import { commitmentKeys } from "@/hooks/queries/utils/commitment-keys";
+import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
+import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
+import { downloadMarkdown } from "@/lib/download-markdown";
+import { DashboardRequestError } from "@/lib/api/request-json";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import type { RevenueTab } from "@/components/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   appendCommitmentTransition,
-  downloadMarkdown,
   friendlyRevenueError,
-  getRelationshipGraph,
   googleNeedsReconnect,
-  getScan,
   getCommitmentRecordMarkdown,
-  getWorkspace,
-  listScans,
-  listCommitments,
-  listRelationshipSources,
-  listRelationshipSourceStatuses,
   REVENUE_EVIDENCE_LOOKBACK_DAYS,
-  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   RevenueAPIError,
   runCommitmentRecovery,
   startScan,
 } from "@/lib/revenue";
 import {
   CommitmentQueue,
-  registerFilterFor,
   type CommitmentQueueItem,
   type CommitmentQueueTransition,
   type RegisterView,
@@ -79,27 +78,16 @@ export function RevenuePanel({
   onTabChange: (tab: RevenueTab) => void;
   onOpenConnectors?: () => void;
 }) {
-  const [workspace, setWorkspace] = React.useState<RevenueWorkspace | null>(null);
+  const [workspaceOverride, setWorkspace] = React.useState<RevenueWorkspace | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
 
   const [scans, setScans] = React.useState<RevenueLeakScan[]>([]);
   const [activeScan, setActiveScan] = React.useState<RevenueLeakScan | null>(null);
   const [scanning, setScanning] = React.useState(false);
-  const [refreshKey, setRefreshKey] = React.useState(0);
-
-  // Load workspace and persisted audit history, including automatic runs.
-  React.useEffect(() => {
-    void getWorkspace()
-      .then(setWorkspace)
-      .catch((e) => {
-        if (e instanceof RevenueAPIError && (e.status === 401 || e.status === 404)) return;
-        setError(registerErrorMessage(e));
-      });
-    void listScans()
-      .then(setScans)
-      .catch(() => {});
-  }, []);
+  const workspaceQuery = useWorkspace();
+  const scanListQuery = useReportScanList();
+  const workspace = workspaceOverride ?? workspaceQuery.data ?? null;
 
   const setBanner = React.useCallback((msg: string | null) => setError(msg || null), []);
   const setNoticeMsg = React.useCallback((msg: string) => {
@@ -108,17 +96,11 @@ export function RevenuePanel({
   }, []);
 
   const queryClient = useQueryClient();
-  const sourceStatusQuery = useQuery({
-    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
-    queryFn: listRelationshipSourceStatuses,
-  });
+  const sourceStatusQuery = useRelationshipSourceStatuses();
   const reconnectBeforeAudit = googleNeedsReconnect(sourceStatusQuery.data ?? []);
 
   const activeScanIsRunning = activeScan?.status === "running" || activeScan?.status === "pending";
-  const scanQuery = useQuery({
-    queryKey: ["revenue-scan", activeScan?.id],
-    queryFn: ({ signal }) => getScan(activeScan!.id, signal),
-    enabled: Boolean(activeScan?.id && activeScanIsRunning),
+  const scanQuery = useReportScan(activeScanIsRunning ? (activeScan?.id ?? null) : null, {
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status === "completed" || status === "failed" ? false : 2_000;
@@ -131,52 +113,35 @@ export function RevenuePanel({
   const [registerAccountId, setRegisterAccountId] = React.useState("");
   const [registerOwner, setRegisterOwner] = React.useState("");
   const [includeCandidates, setIncludeCandidates] = React.useState(false);
-  const commitmentQuery = useQuery({
-    queryKey: [
-      "commitment-queue",
-      refreshKey,
-      registerView,
-      registerAccountId,
-      registerOwner,
+  const commitmentQuery = useCommitmentRegister(
+    {
+      view: registerView,
+      accountId: registerAccountId,
+      owner: registerOwner,
       includeCandidates,
-    ],
-    queryFn: async ({ signal }) => {
-      const filter = registerFilterFor(registerView, {
-        relationshipId: registerAccountId,
-        owner: registerOwner,
-        includeCandidates,
-      });
-      const [entries, sources, graph] = await Promise.allSettled([
-        filter ? listCommitments(filter, signal) : Promise.resolve([]),
-        listRelationshipSources(),
-        getRelationshipGraph({ scope: "portfolio", depth: 1 }),
-      ]);
-      // A failed register fetch must not erase a source list that loaded fine.
-      // Throwing here used to discard the whole result, so the panel fell back
-      // to sources=[] and rendered "Connect Gmail & Calendar" — telling a user
-      // whose Google account was connected and healthy to go connect it. A
-      // request that fails has to say so, not impersonate onboarding.
-      return {
-        entries: entries.status === "fulfilled" ? entries.value : [],
-        registerError:
-          entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
-        sources: sources.status === "fulfilled" ? sources.value : [],
-        accounts:
-          graph.status === "fulfilled"
-            ? graph.value.nodes.flatMap((node) =>
-                node.kind === "relationship" && node.relationshipId
-                  ? [{ id: node.relationshipId, label: node.label }]
-                  : [],
-              )
-            : [],
-        relationshipCount:
-          graph.status === "fulfilled"
-            ? graph.value.nodes.filter((node) => node.kind === "relationship").length
-            : 0,
-      };
     },
-    enabled: tab === "commitments",
-  });
+    { enabled: tab === "commitments" },
+  );
+
+  React.useEffect(() => {
+    const reason = workspaceQuery.error;
+    if (!reason) return;
+    if (
+      reason instanceof DashboardRequestError &&
+      (reason.status === 401 || reason.status === 404)
+    ) {
+      return;
+    }
+    if (reason instanceof RevenueAPIError && (reason.status === 401 || reason.status === 404)) {
+      return;
+    }
+    setError(registerErrorMessage(reason));
+  }, [workspaceQuery.error]);
+
+  React.useEffect(() => {
+    if (!scanListQuery.data) return;
+    setScans(scanListQuery.data);
+  }, [scanListQuery.data]);
 
   // Reconcile query data into the existing panel state while this feature is
   // incrementally migrated from local state to query-owned server state.
@@ -195,8 +160,9 @@ export function RevenuePanel({
       // Either outcome changes the sources: a failed audit marks a dead grant.
       // Refetching only after success left the page saying "the connection
       // looks healthy" beside the reconnect error it had just shown.
-      setRefreshKey((key) => key + 1);
-      void queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: commitmentKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: revenueActionKeys.lists() });
     }
   }, [scanQuery.data, queryClient]);
 
@@ -260,7 +226,8 @@ export function RevenuePanel({
     async (relationshipId: string) => {
       try {
         const result = await runCommitmentRecovery(relationshipId);
-        setRefreshKey((key) => key + 1);
+        await queryClient.invalidateQueries({ queryKey: commitmentKeys.lists() });
+        await queryClient.invalidateQueries({ queryKey: revenueActionKeys.lists() });
         await commitmentQuery.refetch();
         setNoticeMsg(
           result.evaluations.length
@@ -348,7 +315,6 @@ export function RevenuePanel({
             onScan={runScan}
             scanning={scanning}
             needsReconnect={reconnectBeforeAudit}
-            refreshKey={refreshKey}
           />
         ) : tab === "actions" ? (
           <ActionsView />

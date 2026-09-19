@@ -4,9 +4,19 @@ import "client-only";
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRightIcon, CircleNotchIcon, ExportIcon, PlugsIcon, WarningIcon } from "@/lib/icons";
+import {
+  useOpenPromisesReport,
+  useReportScan,
+  useReportScanList,
+} from "@/hooks/queries/use-report";
+import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
+import { reportKeys } from "@/hooks/queries/utils/report-keys";
+import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
+import { useReportScanParam } from "@/hooks/use-product-route-state";
+import { downloadMarkdown } from "@/lib/download-markdown";
 
 import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -20,18 +30,12 @@ import {
   type GoogleOAuthClaimResult,
 } from "@/components/features/connectors/google-oauth-return-handler";
 import {
-  downloadMarkdown,
   friendlyRevenueError,
-  getOpenPromisesReport,
   getOpenPromisesReportMarkdown,
-  getScan,
   latestCompletedScan,
-  listScans,
-  listRelationshipSourceStatuses,
   relationshipSourceHealth,
   REVENUE_EVIDENCE_LOOKBACK_DAYS,
   REVENUE_EVIDENCE_LOOKBACK_LABEL,
-  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue";
@@ -50,17 +54,17 @@ export function OpenPromisesReportClient() {
 function ReportBody() {
   // The running scan is identified in the URL. That makes "leave the page and
   // come back" work with no browser storage, and the link is shareable.
-  const router = useRouter();
   const queryClient = useQueryClient();
   const params = useSearchParams();
-  const scanId = params.get("scan");
+  const [reportParams, setReportParams] = useReportScanParam();
+  const scanId = reportParams.scan;
   const googleConnectedInURL = params.get("google_connected") === "1";
   const hasGoogleCallback = Boolean(params.get("google_session") || params.get("google_status"));
   const setScanId = React.useCallback(
     (id: string | null) => {
-      router.replace(id ? `/app/report?scan=${encodeURIComponent(id)}` : "/app/report");
+      void setReportParams({ scan: id });
     },
-    [router],
+    [setReportParams],
   );
   const [starting, setStarting] = React.useState(false);
   const [connecting, setConnecting] = React.useState(false);
@@ -86,9 +90,7 @@ function ReportBody() {
     };
   }, []);
 
-  const sourcesQuery = useQuery({
-    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
-    queryFn: listRelationshipSourceStatuses,
+  const sourcesQuery = useRelationshipSourceStatuses({
     refetchInterval: (query) => {
       const google = (query.state.data ?? []).find((source) => source.source === "google");
       return googleSourceSyncActive(google) ? 2_000 : false;
@@ -97,16 +99,10 @@ function ReportBody() {
   const googleSource = sourcesQuery.data?.find((source) => source.source === "google");
   const health = relationshipSourceHealth(sourcesQuery.data ?? []);
 
-  const scansQuery = useQuery({
-    queryKey: ["report-scans"],
-    queryFn: () => listScans(),
-  });
+  const scansQuery = useReportScanList();
   const effectiveScanId = scanId ?? latestCompletedScan(scansQuery.data ?? [])?.id ?? null;
 
-  const scanQuery = useQuery({
-    queryKey: ["report-scan", effectiveScanId],
-    queryFn: () => getScan(effectiveScanId as string),
-    enabled: Boolean(effectiveScanId),
+  const scanQuery = useReportScan(effectiveScanId, {
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status === "completed" || status === "failed" ? false : 2_000;
@@ -118,15 +114,11 @@ function ReportBody() {
 
   React.useEffect(() => {
     if (!scanTerminal) return;
-    void queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
-    void queryClient.invalidateQueries({ queryKey: ["report-scans"] });
+    void queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.lists() });
+    void queryClient.invalidateQueries({ queryKey: reportKeys.scans() });
   }, [queryClient, scanTerminal]);
 
-  const reportQuery = useQuery({
-    queryKey: ["report", effectiveScanId],
-    queryFn: () => getOpenPromisesReport(effectiveScanId as string),
-    enabled: Boolean(effectiveScanId) && scanDone,
-  });
+  const reportQuery = useOpenPromisesReport(effectiveScanId, scanDone);
 
   React.useEffect(() => {
     if (reportQuery.data) {

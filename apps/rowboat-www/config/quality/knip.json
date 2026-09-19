@@ -8,6 +8,8 @@
     "e2e-stack/**/*.spec.ts",
     ".storybook/**/*.{ts,tsx}",
     "stories/**/*.{ts,tsx}",
+    "components/**/*.stories.{ts,tsx}",
+    "app/**/*.stories.{ts,tsx}",
     "quality/**/*.{ts,tsx}",
     "*.config.{ts,mjs}",
     "config/**/*.{ts,mts}",
@@ -57,6 +59,7 @@
     "lib/content/editorial.ts": ["exports", "types"],
     "lib/agents/agent-schemas.ts": ["exports", "types"],
     "lib/api/**": ["exports", "types"],
+    "hooks/queries/**": ["exports", "types"],
     "lib/auth/{proxy,pkce}.ts": ["exports", "types"],
     "lib/dev/{debug-bundle,route-catalog}.ts": ["exports", "types"],
     "components/revenue/shared.tsx": ["exports", "types"],
@@ -110,7 +113,9 @@
     "tailwindcss",
     "tokenlens",
     "tw-animate-css",
-    "v0-sdk"
+    "v0-sdk",
+    "zustand",
+    "plop"
   ],
   "ignoreBinaries": ["go", "pipx", "psql", "semgrep", "sqlite3"]
 }

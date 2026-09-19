@@ -1,7 +1,10 @@
 import { Suspense } from "react";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
-import { SettingsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
-import { settingsSectionFromParam } from "@/lib/product-navigation";
+import { SettingsDashboardRoute } from "@/app/(product)/app/settings/_components/settings-dashboard-route/settings-dashboard-route";
+import { prefetchSettings } from "@/app/(product)/app/settings/prefetch";
+import { settingsSearchParamsCache } from "@/app/(product)/app/settings/search-params";
+import { getQueryClient } from "@/lib/query/get-query-client";
 
 export const instant = false;
 
@@ -25,11 +28,16 @@ export default function SettingsPage({ searchParams }: SettingsPageProps) {
 }
 
 async function SettingsRouteContent({ searchParams }: SettingsPageProps) {
-  const { settings } = await searchParams;
+  const raw = await searchParams;
+  const { settings } = settingsSearchParamsCache.parse({
+    settings: Array.isArray(raw.settings) ? raw.settings[0] : raw.settings,
+  });
+  const queryClient = getQueryClient();
+  await prefetchSettings(queryClient);
   return (
-    <SettingsDashboardRoute
-      section={settingsSectionFromParam(Array.isArray(settings) ? settings[0] : settings)}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <SettingsDashboardRoute section={settings} />
+    </HydrationBoundary>
   );
 }
 

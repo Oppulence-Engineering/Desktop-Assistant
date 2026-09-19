@@ -28,6 +28,28 @@ vi.mock("@/lib/revenue", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/revenue")>()),
   ...mocks,
 }));
+vi.mock("@/hooks/queries/utils/fetch-relationship-sources", () => ({
+  fetchRelationshipSourceStatuses: mocks.listRelationshipSourceStatuses,
+  loadRelationshipSourceStatuses: mocks.listRelationshipSourceStatuses,
+  fetchRelationshipSources: mocks.listRelationshipSources,
+  loadRelationshipSources: mocks.listRelationshipSources,
+}));
+vi.mock("@/hooks/queries/utils/fetch-report", () => ({
+  fetchReportScans: mocks.listScans,
+  fetchReportScan: mocks.getScan,
+  fetchOpenPromisesReport: vi.fn(),
+  loadReportScans: mocks.listScans,
+  loadReportScan: mocks.getScan,
+  loadOpenPromisesReport: vi.fn(),
+}));
+vi.mock("@/hooks/queries/utils/fetch-workspace", () => ({
+  fetchWorkspace: mocks.getWorkspace,
+  loadWorkspace: mocks.getWorkspace,
+}));
+vi.mock("@/hooks/queries/utils/fetch-commitments", () => ({
+  fetchCommitments: mocks.listCommitments,
+  loadCommitments: mocks.listCommitments,
+}));
 vi.mock("@/lib/analytics", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analytics")>()),
   capture: vi.fn(),

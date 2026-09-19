@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const auth = vi.hoisted(() => ({
-  dashboardFetch: vi.fn(),
-  toDashboardAPIPath: vi.fn((path: string) => `/api/rowboat/v1${path}`),
+const dashboard = vi.hoisted(() => ({
+  dashboardRequest: vi.fn(),
+  toDashboardAPIPath: (path: string) => `/api/rowboat/v1${path}`,
+  redirectBrowserIfUnauthorized: () => undefined,
+  loginURL: () => "/api/auth/workos/login",
 }));
 
-vi.mock("@/lib/auth/client", () => auth);
+vi.mock("@/lib/auth/dashboard-fetch", () => dashboard);
 
 import {
   ConsoleAPIError,
@@ -24,10 +26,10 @@ const preferences = {
 };
 
 describe("validated console adapter", () => {
-  beforeEach(() => auth.dashboardFetch.mockReset());
+  beforeEach(() => dashboard.dashboardRequest.mockReset());
 
   it("returns only preferences consumed by rowboat-www", async () => {
-    auth.dashboardFetch.mockResolvedValue(new Response(JSON.stringify(preferences)));
+    dashboard.dashboardRequest.mockResolvedValue(new Response(JSON.stringify(preferences)));
 
     await expect(getConsolePreferences()).resolves.toEqual({
       defaultAgentSlug: "account-reviewer",
@@ -37,16 +39,16 @@ describe("validated console adapter", () => {
   });
 
   it("sends only supported preference fields", async () => {
-    auth.dashboardFetch.mockResolvedValue(new Response(JSON.stringify(preferences)));
+    dashboard.dashboardRequest.mockResolvedValue(new Response(JSON.stringify(preferences)));
 
     await patchConsolePreferences({ displayName: "Grace", shareUsageData: false });
 
-    const init = auth.dashboardFetch.mock.calls[0]?.[1] as RequestInit;
+    const init = dashboard.dashboardRequest.mock.calls[0]?.[1] as RequestInit;
     expect(init.body).toBe(JSON.stringify({ displayName: "Grace", shareUsageData: false }));
   });
 
   it("rejects malformed resource responses", async () => {
-    auth.dashboardFetch.mockResolvedValue(
+    dashboard.dashboardRequest.mockResolvedValue(
       new Response(JSON.stringify({ limit: 100, offset: 0, resources: [{ id: "invalid" }] })),
     );
 
@@ -54,7 +56,7 @@ describe("validated console adapter", () => {
   });
 
   it("treats a missing console route as an empty resource list", async () => {
-    auth.dashboardFetch.mockResolvedValue(
+    dashboard.dashboardRequest.mockResolvedValue(
       new Response(JSON.stringify({ code: "not_found", detail: "not found" }), { status: 404 }),
     );
 
@@ -62,7 +64,7 @@ describe("validated console adapter", () => {
   });
 
   it("exposes stable API errors", async () => {
-    auth.dashboardFetch.mockResolvedValue(
+    dashboard.dashboardRequest.mockResolvedValue(
       new Response(JSON.stringify({ code: "console_unavailable", detail: "Try later" }), {
         status: 503,
       }),

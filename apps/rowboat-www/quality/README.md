@@ -25,6 +25,10 @@ Rule ownership:
 - `WEB001`–`WEB014`, `WEB019`, `WEB022`: `@oppulence/eslint-plugin-web`
 - `WEB015`–`WEB018`: `quality/repository-policies.test.ts` and contract drift scripts
 - `WEB020`: `quality/component-contracts.test.ts` plus colocated Testing Library tests
+- `WEB023`–`WEB028`: `quality/generate-policies.test.ts` and `quality/generate-*.test.ts` — Zod-only
+  types beside lits, generated page/hook/mutation skeletons, lit file inventories, generator goldens,
+  new-fetcher Orval/path/`as T` drift, and WEB029 `@oppulence-gen` stamps on new units
+- Query keys/fetchers: `npm run queries:check` — no inline React Query keys (except the listed legacy files), and server-sensitive modules must not import `'use client'` query helpers
 - `WEB021`: `quality/repository-policies.test.ts` — flows that send the user to an external page must refresh on return
 - Cross-package imports: `config/architecture/dependency-cruiser.config.mjs`
 - Security/data-flow sinks: `config/quality/semgrep.yml`

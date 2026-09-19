@@ -26,8 +26,12 @@ import {
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
 import { Textarea } from "@oppulence/ui/components/textarea";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePendingActionProposals } from "@/hooks/queries/use-action-proposals";
+import { actionProposalKeys } from "@/hooks/queries/utils/action-proposal-keys";
 import { capture, ActionEvents } from "@/lib/analytics";
-import { ActionAPIError, approve, execute, listPending, reject } from "@/lib/actions";
+import { ActionAPIError, approve, execute, reject } from "@/lib/actions";
+import { DashboardRequestError } from "@/lib/api/request-json";
 import { errMessage, ListSkeleton, WorkspaceEmptyState } from "@/components/revenue/shared";
 import { ActionAuditSheet } from "@/components/actions/audit-sheet";
 import type { ActionProposal, ActionStatus } from "@/types/actions";
@@ -67,36 +71,37 @@ function Ref({ children }: { children: React.ReactNode }) {
 }
 
 export function ActionsView() {
-  const [proposals, setProposals] = React.useState<ActionProposal[] | null>(null);
+  const queryClient = useQueryClient();
+  const proposalsQuery = usePendingActionProposals();
+  const [localProposals, setLocalProposals] = React.useState<ActionProposal[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  const [disabled, setDisabled] = React.useState(false);
   const [busy, setBusy] = React.useState<Record<string, string>>({}); // id → verb
   const [rejecting, setRejecting] = React.useState<ActionProposal | null>(null);
   const [auditRef, setAuditRef] = React.useState<string | null>(null);
   // Tokens held in memory after approve for a within-session execute retry when
   // the Act seam is momentarily unavailable. Never persisted.
   const tokens = React.useRef<Record<string, string>>({});
+  const unavailable =
+    proposalsQuery.error instanceof DashboardRequestError &&
+    (proposalsQuery.error.status === 404 || proposalsQuery.error.status === 501);
+  const disabled = unavailable;
+  const proposals = unavailable
+    ? []
+    : (localProposals ?? proposalsQuery.data ?? (proposalsQuery.isPending ? null : []));
+
+  React.useEffect(() => {
+    if (proposalsQuery.data) setLocalProposals(proposalsQuery.data);
+  }, [proposalsQuery.data]);
+
+  React.useEffect(() => {
+    if (!proposalsQuery.error || unavailable) return;
+    setError(errMessage(proposalsQuery.error, "Could not load action proposals."));
+  }, [proposalsQuery.error, unavailable]);
 
   const load = React.useCallback(async () => {
     setError(null);
-    try {
-      const list = await listPending();
-      setProposals(list);
-      setDisabled(false);
-    } catch (e) {
-      if (e instanceof ActionAPIError && (e.status === 404 || e.status === 501)) {
-        setDisabled(true);
-        setProposals([]);
-        return;
-      }
-      setError(errMessage(e, "Could not load action proposals."));
-      setProposals([]);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    void load();
-  }, [load]);
+    await queryClient.invalidateQueries({ queryKey: actionProposalKeys.lists() });
+  }, [queryClient]);
 
   const setRowBusy = (id: string, verb: string | null) =>
     setBusy((b) => {
@@ -107,7 +112,7 @@ export function ActionsView() {
     });
 
   const replace = (p: ActionProposal) =>
-    setProposals((cur) => (cur ? cur.map((x) => (x.id === p.id ? p : x)) : cur));
+    setLocalProposals((cur) => (cur ? cur.map((x) => (x.id === p.id ? p : x)) : cur));
 
   // Approve then immediately execute with the freshly issued token. If the Act
   // seam is unavailable the proposal stays approved and the token is kept for a

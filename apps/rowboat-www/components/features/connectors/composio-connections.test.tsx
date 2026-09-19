@@ -2,9 +2,11 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithQuery } from "@/quality/test-support/render-query";
 
 const mocks = vi.hoisted(() => ({
   listComposioToolkits: vi.fn(),
@@ -14,9 +16,12 @@ const mocks = vi.hoisted(() => ({
   UnconfiguredError: class extends Error {},
 }));
 
+vi.mock("@/hooks/queries/utils/fetch-composio", () => ({
+  fetchComposioToolkits: mocks.listComposioToolkits,
+  fetchComposioConnections: mocks.listComposioConnections,
+  ComposioUnconfiguredError: mocks.UnconfiguredError,
+}));
 vi.mock("@/lib/api/composio/client", () => ({
-  listComposioToolkits: mocks.listComposioToolkits,
-  listComposioConnections: mocks.listComposioConnections,
   startComposioConnection: mocks.startComposioConnection,
   disconnectComposio: mocks.disconnectComposio,
   ComposioUnconfiguredError: mocks.UnconfiguredError,
@@ -39,7 +44,7 @@ beforeEach(() => {
 
 describe("Composio connections", () => {
   it("offers a connect action for each product that is not linked", async () => {
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("Jira")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
@@ -54,7 +59,7 @@ describe("Composio connections", () => {
       redirectUrl: "https://connect.composio.dev/link/lk_1",
       expiresAt: "",
     });
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
     await screen.findByText("Jira");
 
     await userEvent.click(screen.getAllByRole("button", { name: "Connect" })[0]);
@@ -72,7 +77,7 @@ describe("Composio connections", () => {
       { id: "ca_1", toolkit: "jira", status: "ACTIVE", createdAt: "" },
     ]);
     mocks.disconnectComposio.mockResolvedValue(undefined);
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Disconnect" }));
 
@@ -90,7 +95,7 @@ describe("Composio connections", () => {
       expiresAt: "2026-09-16T17:58:42.979Z",
     });
     const user = userEvent.setup();
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
     await user.click((await screen.findAllByRole("button", { name: "Connect" }))[0]);
 
     // The user authorizes on Composio's page, so the account now exists.
@@ -104,7 +109,7 @@ describe("Composio connections", () => {
   });
 
   it("does not refetch when the tab regains focus with no connection pending", async () => {
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
     await screen.findByText("Jira");
 
     document.dispatchEvent(new Event("visibilitychange"));
@@ -118,7 +123,7 @@ describe("Composio connections", () => {
       { id: "ca_live", toolkit: "jira", status: "ACTIVE", createdAt: "2026-09-16T10:00:00Z" },
       { id: "ca_new", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T11:00:00Z" },
     ]);
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
 
     // The live connection wins over the newer pending ones, and Jira shows once.
     expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
@@ -131,7 +136,7 @@ describe("Composio connections", () => {
       { id: "ca_old", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T09:00:00Z" },
       { id: "ca_new", toolkit: "jira", status: "EXPIRED", createdAt: "2026-09-16T11:00:00Z" },
     ]);
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("expired")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
@@ -139,7 +144,7 @@ describe("Composio connections", () => {
 
   it("renders nothing when the server holds no project key", async () => {
     mocks.listComposioToolkits.mockRejectedValue(new mocks.UnconfiguredError());
-    const { container } = render(<ComposioConnections />);
+    const { container } = renderWithQuery(<ComposioConnections />);
 
     await vi.waitFor(() => {
       expect(container).toBeEmptyDOMElement();
@@ -148,7 +153,7 @@ describe("Composio connections", () => {
 
   it("says so when the products cannot be loaded", async () => {
     mocks.listComposioToolkits.mockRejectedValue(new Error("upstream"));
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("Could not load products.")).toBeInTheDocument();
   });
@@ -163,7 +168,7 @@ describe("Composio connections for products no longer offered", () => {
       { id: "ca_1", toolkit: "gmail", status: "ACTIVE", createdAt: "2026-09-16T01:01:39.923Z" },
     ]);
     mocks.disconnectComposio.mockResolvedValue(undefined);
-    render(<ComposioConnections />);
+    renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("gmail")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
@@ -173,7 +178,7 @@ describe("Composio connections for products no longer offered", () => {
 
   it("reports the offered product slugs so the caller can drop duplicate cards", async () => {
     const onToolkits = vi.fn();
-    render(<ComposioConnections onToolkits={onToolkits} />);
+    renderWithQuery(<ComposioConnections onToolkits={onToolkits} />);
     await screen.findByText("Jira");
 
     expect(onToolkits).toHaveBeenCalledWith(["jira", "asana"]);

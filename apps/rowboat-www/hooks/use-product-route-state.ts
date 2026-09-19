@@ -3,15 +3,17 @@
 import "client-only";
 
 import { useCallback } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryStates } from "nuqs";
 
+import { reportParsers, reportUrlKeys } from "@/app/(product)/app/report/search-params";
+import { revenueParsers, revenueUrlKeys } from "@/app/(product)/app/revenue/search-params";
+import { settingsParsers, settingsUrlKeys } from "@/app/(product)/app/settings/search-params";
+import { workflowParsers, workflowUrlKeys } from "@/app/(product)/app/workflows/search-params";
 import {
   PRODUCT_VIEW_PATHS,
   productViewForPathname,
-  revenueTabFromParam,
   revenueTabSearch,
-  settingsSectionFromParam,
-  workflowFocusFromParam,
   type ProductView,
   type RevenueTab,
   type SettingsSection,
@@ -29,55 +31,80 @@ export type ProductRouteState = {
   openWorkflows: (focus: WorkflowFocus) => void;
 };
 
+function settingsSearch(section: SettingsSection): string {
+  return section === "overview" ? "" : `?settings=${encodeURIComponent(section)}`;
+}
+
+function workflowSearch(focus: WorkflowFocus): string {
+  return focus === "scheduled" ? "" : "?focus=runs";
+}
+
 /**
- * Treats the App Router URL as the single source of truth for dashboard
- * navigation. Parsing happens through Zod-backed helpers because pathname and
- * search parameters are browser-controlled inputs.
+ * Pathname owns the product surface. nuqs owns shareable query state on that
+ * surface. Cross-path navigation still uses the router so it cannot drop
+ * unrelated params by rewriting a path template.
  */
 export function useProductRouteState(): ProductRouteState {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const navigate = useCallback(
-    (target: string) => {
-      const current = `${pathname}${searchParams.size ? `?${searchParams.toString()}` : ""}`;
-      if (current !== target) router.push(target, { scroll: false });
-    },
-    [pathname, router, searchParams],
-  );
+  const view = productViewForPathname(pathname);
+  const [revenue, setRevenue] = useQueryStates(revenueParsers, revenueUrlKeys);
+  const [settings, setSettings] = useQueryStates(settingsParsers, settingsUrlKeys);
+  const [workflows, setWorkflows] = useQueryStates(workflowParsers, workflowUrlKeys);
 
   const navigateTo = useCallback(
-    (view: ProductView) => navigate(PRODUCT_VIEW_PATHS[view]),
-    [navigate],
+    (target: ProductView) => {
+      const path = PRODUCT_VIEW_PATHS[target];
+      if (pathname !== path) router.push(path, { scroll: false });
+    },
+    [pathname, router],
   );
+
   const openRevenueTab = useCallback(
-    (tab: RevenueTab) => navigate(`${PRODUCT_VIEW_PATHS.revenue}${revenueTabSearch(tab)}`),
-    [navigate],
+    (tab: RevenueTab) => {
+      if (view === "revenue") {
+        void setRevenue({ tab });
+        return;
+      }
+      router.push(`${PRODUCT_VIEW_PATHS.revenue}${revenueTabSearch(tab)}`, { scroll: false });
+    },
+    [router, setRevenue, view],
   );
+
   const openSettings = useCallback(
-    (section: SettingsSection) =>
-      navigate(
-        `${PRODUCT_VIEW_PATHS.settings}${
-          section === "overview" ? "" : `?settings=${encodeURIComponent(section)}`
-        }`,
-      ),
-    [navigate],
+    (section: SettingsSection) => {
+      if (view === "settings") {
+        void setSettings({ settings: section });
+        return;
+      }
+      router.push(`${PRODUCT_VIEW_PATHS.settings}${settingsSearch(section)}`, { scroll: false });
+    },
+    [router, setSettings, view],
   );
+
   const openWorkflows = useCallback(
-    (focus: WorkflowFocus) =>
-      navigate(`${PRODUCT_VIEW_PATHS.workflows}${focus === "runs" ? "?focus=runs" : ""}`),
-    [navigate],
+    (focus: WorkflowFocus) => {
+      if (view === "workflows") {
+        void setWorkflows({ focus });
+        return;
+      }
+      router.push(`${PRODUCT_VIEW_PATHS.workflows}${workflowSearch(focus)}`, { scroll: false });
+    },
+    [router, setWorkflows, view],
   );
 
   return {
-    view: productViewForPathname(pathname),
-    revenueTab: revenueTabFromParam(searchParams.get("tab")),
-    settingsSection: settingsSectionFromParam(searchParams.get("settings")),
-    workflowFocus: workflowFocusFromParam(searchParams.get("focus")),
+    view,
+    revenueTab: revenue.tab,
+    settingsSection: settings.settings,
+    workflowFocus: workflows.focus,
     navigateTo,
     openRevenueTab,
     openSettings,
     openWorkflows,
   };
+}
+
+export function useReportScanParam() {
+  return useQueryStates(reportParsers, reportUrlKeys);
 }

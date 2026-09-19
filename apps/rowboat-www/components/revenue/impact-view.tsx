@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { EnvelopeSimple, WarningDiamond } from "@/lib/icons";
+import { useImpactBundle } from "@/hooks/queries/use-impact";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -25,18 +25,12 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 
-import { DETECTOR_LABELS, getDigest, getImpact } from "@/lib/revenue";
+import { DETECTOR_LABELS } from "@/lib/revenue";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
 import { cn } from "@/lib/utils";
 
 export function ImpactView({ onError }: { onError: (m: string) => void }) {
-  const impactQuery = useQuery({
-    queryKey: ["revenue-impact"],
-    queryFn: async () => {
-      const [data, digest] = await Promise.all([getImpact(), getDigest().catch(() => null)]);
-      return { data, digest };
-    },
-  });
+  const impactQuery = useImpactBundle();
 
   React.useEffect(() => {
     if (impactQuery.error) {

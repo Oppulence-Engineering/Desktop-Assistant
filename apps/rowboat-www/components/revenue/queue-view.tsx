@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRelationships } from "@/hooks/queries/use-relationships";
+import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import {
   Alarm,
   CheckCircle,
@@ -48,8 +51,6 @@ import {
   createAction,
   DETECTOR_LABELS,
   dismissAction,
-  listActions,
-  listRelationships,
   QUEUE_FILTERS,
   snoozeAction,
 } from "@/lib/revenue";
@@ -72,7 +73,6 @@ export function QueueView({
   onScan,
   scanning,
   needsReconnect = false,
-  refreshKey = 0,
 }: {
   workspace: RevenueWorkspace | null;
   onError: (m: string) => void;
@@ -81,21 +81,14 @@ export function QueueView({
   scanning: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
-  refreshKey?: number;
 }) {
   const [filter, setFilter] = React.useState("open");
   const [selected, setSelected] = React.useState<RevenueAction | null>(null);
   const [auditFor, setAuditFor] = React.useState<RevenueAction | null>(null);
   const [creating, setCreating] = React.useState(false);
   const queryClient = useQueryClient();
-  const actionsQueryKey = React.useMemo(
-    () => ["revenue-actions", filter, refreshKey] as const,
-    [filter, refreshKey],
-  );
-  const actionsQuery = useQuery({
-    queryKey: actionsQueryKey,
-    queryFn: () => listActions(filter, 50),
-  });
+  const actionsQueryKey = revenueActionKeys.list(filter, 50);
+  const actionsQuery = useRevenueActions(filter);
   const actions = actionsQuery.data ?? [];
 
   React.useEffect(() => {
@@ -385,7 +378,8 @@ function CreateActionDialog({
   onCreated: (a: RevenueAction) => void;
   onError: (m: string) => void;
 }) {
-  const [relationships, setRelationships] = React.useState<RevenueRelationship[]>([]);
+  const relationshipsQuery = useRelationships();
+  const relationships = relationshipsQuery.data ?? [];
   const [relationshipId, setRelationshipId] = React.useState("");
   const [actionType, setActionType] = React.useState("warm_follow_up");
   const [subject, setSubject] = React.useState("");
@@ -394,13 +388,14 @@ function CreateActionDialog({
   const [busy, setBusy] = React.useState(false);
 
   React.useEffect(() => {
-    void listRelationships()
-      .then((r) => {
-        setRelationships(r);
-        if (r[0]) setRelationshipId(r[0].id);
-      })
-      .catch((e) => onError(errMessage(e, "Could not load relationships.")));
-  }, [onError]);
+    if (relationshipsQuery.error) {
+      onError(errMessage(relationshipsQuery.error, "Could not load relationships."));
+    }
+  }, [onError, relationshipsQuery.error]);
+
+  React.useEffect(() => {
+    if (!relationshipId && relationships[0]) setRelationshipId(relationships[0].id);
+  }, [relationshipId, relationships]);
 
   const submit = async () => {
     if (!relationshipId || !reason.trim()) return;

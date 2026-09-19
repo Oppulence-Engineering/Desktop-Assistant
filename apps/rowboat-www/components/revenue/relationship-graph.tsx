@@ -5,7 +5,11 @@ import {
   queryRelationshipGraph,
   relationshipGraphNeighborhood,
 } from "@oppulence/relationship-contract";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useConsoleResources } from "@/hooks/queries/use-console";
+import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
+import { consoleKeys } from "@/hooks/queries/utils/console-keys";
+import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import {
   ArrowCounterClockwise,
   Buildings,
@@ -74,14 +78,8 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
-import {
-  approveAction,
-  createAction,
-  evaluateAction,
-  getRelationshipGraph,
-  rejectAction,
-} from "@/lib/revenue";
-import { createConsoleResource, deleteConsoleResource, listConsoleResources } from "@/lib/console";
+import { approveAction, createAction, evaluateAction, rejectAction } from "@/lib/revenue";
+import { createConsoleResource, deleteConsoleResource } from "@/lib/console";
 import {
   LEGACY_GRAPH_VIEWS_KEY,
   graphSavedViews,
@@ -845,21 +843,28 @@ export function RelationshipGraphWorkspace({
 }) {
   const queryClient = useQueryClient();
   const [viewState, setViewState] = React.useState<RelationshipGraphSavedViewState>(readURLState);
-  const [graph, setGraph] = React.useState<RelationshipGraph | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [mode, setMode] = React.useState<"canvas" | "table">("canvas");
   const [queryDraft, setQueryDraft] = React.useState(() => readURLState().query);
   const [activeSavedViewId, setActiveSavedViewId] = React.useState<string>();
   const [resetSignal, setResetSignal] = React.useState(0);
-  const loadRequestRef = React.useRef(0);
   const migrationStartedRef = React.useRef(false);
-  const savedViewsQuery = useQuery({
-    queryKey: ["console", "resources", "graph_saved_view"],
-    queryFn: ({ signal }) => listConsoleResources("graph_saved_view", signal),
-    select: graphSavedViews,
-  });
+  const graphEnabled = !(viewState.scope === "relationship" && !viewState.relationshipId);
+  const graphQuery = useRelationshipGraph(
+    {
+      scope: viewState.scope,
+      relationshipId: viewState.relationshipId,
+      depth: 2,
+      asOf: viewState.asOf,
+    },
+    graphEnabled,
+  );
+  const graph = graphEnabled ? (graphQuery.data ?? null) : null;
+  const loading = graphEnabled && graphQuery.isPending;
+  const loadError = graphQuery.error
+    ? errMessage(graphQuery.error, "Could not load the relationship graph.")
+    : null;
+  const savedViewsQuery = useConsoleResources("graph_saved_view", graphSavedViews);
   const legacyViews = React.useMemo(
     () => (typeof window === "undefined" ? [] : readLegacyGraphViews(window.localStorage)),
     [],
@@ -883,7 +888,7 @@ export function RelationshipGraphWorkspace({
     onSuccess: (resource) => {
       setActiveSavedViewId(resource.id);
       void queryClient.invalidateQueries({
-        queryKey: ["console", "resources", "graph_saved_view"],
+        queryKey: consoleKeys.resourceKind("graph_saved_view"),
       });
       onNotice(`Saved “${resource.name}”.`);
     },
@@ -894,7 +899,7 @@ export function RelationshipGraphWorkspace({
     onSuccess: () => {
       setActiveSavedViewId(undefined);
       void queryClient.invalidateQueries({
-        queryKey: ["console", "resources", "graph_saved_view"],
+        queryKey: consoleKeys.resourceKind("graph_saved_view"),
       });
       onNotice("Saved graph view deleted.");
     },
@@ -915,7 +920,7 @@ export function RelationshipGraphWorkspace({
     onSuccess: (changed) => {
       if (changed) {
         void queryClient.invalidateQueries({
-          queryKey: ["console", "resources", "graph_saved_view"],
+          queryKey: consoleKeys.resourceKind("graph_saved_view"),
         });
       }
     },
@@ -945,49 +950,23 @@ export function RelationshipGraphWorkspace({
   }, [migrationPending, savedViewsQuery.data]);
 
   const load = React.useCallback(async () => {
-    const requestId = ++loadRequestRef.current;
-    if (viewState.scope === "relationship" && !viewState.relationshipId) {
-      setGraph(null);
-      setLoadError(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setGraph(null);
-    setLoadError(null);
-    try {
-      const nextGraph = await getRelationshipGraph({
-        scope: viewState.scope,
-        relationshipId: viewState.relationshipId,
-        depth: 2,
-        asOf: viewState.asOf,
-      });
-      if (requestId === loadRequestRef.current) {
-        setGraph(nextGraph);
-        setViewState((current) =>
-          current.selectedNodeId &&
-          !nextGraph.nodes.some((node) => node.id === current.selectedNodeId)
-            ? { ...current, selectedNodeId: undefined, focusDepth: 0 }
-            : current,
-        );
-      }
-    } catch (error) {
-      if (requestId !== loadRequestRef.current) return;
-      const message = errMessage(error, "Could not load the relationship graph.");
-      setLoadError(message);
-      onError(message);
-    } finally {
-      if (requestId === loadRequestRef.current) setLoading(false);
-    }
-  }, [onError, viewState.asOf, viewState.relationshipId, viewState.scope]);
+    await queryClient.invalidateQueries({ queryKey: relationshipKeys.graphs() });
+  }, [queryClient]);
 
   React.useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
-    return () => {
-      window.clearTimeout(timer);
-      loadRequestRef.current += 1;
-    };
-  }, [load]);
+    if (!graph) return;
+    setViewState((current) =>
+      current.selectedNodeId && !graph.nodes.some((node) => node.id === current.selectedNodeId)
+        ? { ...current, selectedNodeId: undefined, focusDepth: 0 }
+        : current,
+    );
+  }, [graph]);
+
+  React.useEffect(() => {
+    if (graphQuery.error) {
+      onError(errMessage(graphQuery.error, "Could not load the relationship graph."));
+    }
+  }, [graphQuery.error, onError]);
 
   React.useEffect(() => {
     writeURLState(viewState);

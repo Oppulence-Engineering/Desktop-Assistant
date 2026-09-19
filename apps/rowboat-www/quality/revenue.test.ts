@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { dashboardFetch } from "@/lib/auth/client";
+import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
   companyLinkedInURL,
   friendlyRevenueError,
@@ -14,12 +14,14 @@ import {
   semanticSearch,
 } from "@/lib/revenue";
 
-vi.mock("@/lib/auth/client", () => ({
-  dashboardFetch: vi.fn(),
+vi.mock("@/lib/auth/dashboard-fetch", () => ({
+  dashboardRequest: vi.fn(),
   toDashboardAPIPath: (path: string) => path,
+  redirectBrowserIfUnauthorized: () => undefined,
+  loginURL: (returnTo = "/app") => `/api/auth/workos/login?return_to=${returnTo}`,
 }));
 
-const mockFetch = vi.mocked(dashboardFetch);
+const mockFetch = vi.mocked(dashboardRequest);
 
 beforeEach(() => mockFetch.mockReset());
 
@@ -75,7 +77,20 @@ describe("getRelationshipGraph", () => {
         new Response(
           JSON.stringify({
             relationships: Array.from({ length: 5 }, (_, index) => ({
-              id: `relationship-${String(index + 1)}`,
+              categories: [],
+              displayName: `Relationship ${String(index + 1)}`,
+              engagement: "unknown",
+              health: "unknown",
+              id: `00000000-0000-4000-8000-00000000000${String(index + 1)}`,
+              kind: "company",
+              lifecycle: "prospect",
+              milestones: [],
+              projectorVersion: 1,
+              resourceRefs: [],
+              risks: [],
+              sentiment: "unknown",
+              stateVersion: 1,
+              status: "active",
             })),
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },

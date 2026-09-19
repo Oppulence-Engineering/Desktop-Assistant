@@ -31,7 +31,15 @@ import {
   User,
   X,
 } from "@/lib/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useConsoleResources } from "@/hooks/queries/use-console";
+import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
+import { useWorkspaceNotes } from "@/hooks/queries/use-workspace";
+import { consoleKeys } from "@/hooks/queries/utils/console-keys";
+import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
+import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
+import { workspaceKeys } from "@/hooks/queries/utils/workspace-keys";
 
 import {
   EmptyBlock,
@@ -86,33 +94,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import {
-  collapseWorkspaceNotes,
-  mapSettledWithConcurrency,
-  plateText,
-  type WorkspaceNote,
-} from "@/lib/revenue-records";
-import {
-  createConsoleResource,
-  deleteConsoleResource,
-  listConsoleResources,
-  patchConsoleResource,
-} from "@/lib/console";
+import { plateText, type WorkspaceNote } from "@/lib/revenue-records";
+import { createConsoleResource, deleteConsoleResource, patchConsoleResource } from "@/lib/console";
 import { noteFavorites, noteTemplates, type NoteTemplateResource } from "@/lib/console-resources";
 import {
   createRelationship,
   dismissAction,
   getPersonAttributes,
-  getRelationshipTimeline,
   ingestRelationshipObservations,
-  listActions,
-  listPersons,
-  listRelationships,
   relativeTime,
   safeResearchCitationURL,
 } from "@/lib/revenue";
 import type {
-  RelationshipObservation,
   RelationshipPerson,
   RelationshipPersonAttribute,
   RevenueAction,
@@ -196,28 +189,30 @@ function RecordHeader({
 }
 
 export function PeopleView({ onError, onNotice }: ViewProps) {
-  const [people, setPeople] = React.useState<RelationshipPerson[]>([]);
+  const queryClient = useQueryClient();
   const [query, setQuery] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<RelationshipPerson | null>(null);
   const [attributes, setAttributes] = React.useState<RelationshipPersonAttribute[]>([]);
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      setPeople(await listPersons(query));
-    } catch (error) {
-      onError(errMessage(error, "Could not load people."));
-    } finally {
-      setLoading(false);
-    }
-  }, [onError, query]);
+  const peopleQuery = usePersons(debouncedQuery);
+  const people = peopleQuery.data ?? [];
+  const loading = peopleQuery.isPending;
 
   React.useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 180);
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 180);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [query]);
+
+  React.useEffect(() => {
+    if (peopleQuery.error) {
+      onError(errMessage(peopleQuery.error, "Could not load people."));
+    }
+  }, [onError, peopleQuery.error]);
+
+  const load = React.useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: relationshipKeys.all });
+  }, [queryClient]);
 
   const openPerson = async (person: RelationshipPerson) => {
     setSelected(person);
@@ -559,31 +554,6 @@ function PersonSheet({
   );
 }
 
-async function listWorkspaceNotes(signal?: AbortSignal): Promise<{
-  notes: WorkspaceNote[];
-  relationships: RevenueRelationship[];
-  failedTimelineCount: number;
-}> {
-  const relationships = (await listRelationships({}, signal)).filter(
-    (relationship) => relationship.kind !== "person",
-  );
-  const results = await mapSettledWithConcurrency(relationships, 6, (relationship) =>
-    getRelationshipTimeline(relationship.id, 200, signal),
-  );
-  const successfulRelationships: RevenueRelationship[] = [];
-  const timelines: RelationshipObservation[][] = [];
-  results.forEach((result, index) => {
-    if (result.status !== "fulfilled") return;
-    successfulRelationships.push(relationships[index]);
-    timelines.push(result.value);
-  });
-  return {
-    notes: collapseWorkspaceNotes(successfulRelationships, timelines),
-    relationships,
-    failedTimelineCount: results.length - successfulRelationships.length,
-  };
-}
-
 const plateValue = (note?: WorkspaceNote): Value => {
   if (Array.isArray(note?.content)) return note.content as Value;
   return [{ type: "p", children: [{ text: note?.body || "" }] }];
@@ -597,9 +567,10 @@ const todayValue = () => {
 
 export function NotesView({ onError, onNotice }: ViewProps) {
   const queryClient = useQueryClient();
-  const [notes, setNotes] = React.useState<WorkspaceNote[]>([]);
-  const [relationships, setRelationships] = React.useState<RevenueRelationship[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const notesQuery = useWorkspaceNotes();
+  const notes = notesQuery.data?.notes ?? [];
+  const relationships = notesQuery.data?.relationships ?? [];
+  const loading = notesQuery.isPending;
   const [editing, setEditing] = React.useState<
     WorkspaceNote | { template?: NoteTemplateResource } | null
   >(null);
@@ -610,16 +581,8 @@ export function NotesView({ onError, onNotice }: ViewProps) {
   const [layout, setLayout] = React.useState<"grid" | "list">("grid");
   const [newestFirst, setNewestFirst] = React.useState(true);
   const [showFavorites, setShowFavorites] = React.useState(true);
-  const templatesQuery = useQuery({
-    queryKey: ["console", "resources", "note_template"],
-    queryFn: ({ signal }) => listConsoleResources("note_template", signal),
-    select: noteTemplates,
-  });
-  const favoritesQuery = useQuery({
-    queryKey: ["console", "resources", "note_favorite"],
-    queryFn: ({ signal }) => listConsoleResources("note_favorite", signal),
-    select: noteFavorites,
-  });
+  const templatesQuery = useConsoleResources("note_template", noteTemplates);
+  const favoritesQuery = useConsoleResources("note_favorite", noteFavorites);
   const favoriteMutation = useMutation({
     mutationFn: async (noteId: string) => {
       const existing = favoritesQuery.data?.find((favorite) => favorite.payload.noteId === noteId);
@@ -627,38 +590,27 @@ export function NotesView({ onError, onNotice }: ViewProps) {
       return createConsoleResource({ kind: "note_favorite", payload: { noteId } });
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["console", "resources", "note_favorite"] }),
+      queryClient.invalidateQueries({ queryKey: consoleKeys.resourceKind("note_favorite") }),
     onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
   });
-  const load = React.useCallback(
-    async (signal?: AbortSignal) => {
-      setLoading(true);
-      try {
-        const result = await listWorkspaceNotes(signal);
-        setNotes(result.notes);
-        setRelationships(result.relationships);
-        if (result.failedTimelineCount > 0) {
-          onNotice(
-            `Loaded available notes, but ${String(result.failedTimelineCount)} relationship timeline${result.failedTimelineCount === 1 ? "" : "s"} could not be read.`,
-          );
-        }
-      } catch (error) {
-        if (signal?.aborted) return;
-        onError(errMessage(error, "Could not load notes."));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [onError, onNotice],
-  );
+  const load = React.useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: workspaceKeys.notes() });
+  }, [queryClient]);
+
   React.useEffect(() => {
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => void load(controller.signal), 0);
-    return () => {
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [load]);
+    if (notesQuery.error) {
+      onError(errMessage(notesQuery.error, "Could not load notes."));
+    }
+  }, [notesQuery.error, onError]);
+
+  React.useEffect(() => {
+    const failed = notesQuery.data?.failedTimelineCount ?? 0;
+    if (failed > 0) {
+      onNotice(
+        `Loaded available notes, but ${String(failed)} relationship timeline${failed === 1 ? "" : "s"} could not be read.`,
+      );
+    }
+  }, [notesQuery.data?.failedTimelineCount, onNotice]);
   const visible = [...notes].sort((left, right) =>
     newestFirst
       ? right.occurredAt.localeCompare(left.occurredAt)
@@ -1026,7 +978,7 @@ function TemplateDialog({
     },
     onSuccess: (_, action) => {
       void queryClient.invalidateQueries({
-        queryKey: ["console", "resources", "note_template"],
+        queryKey: consoleKeys.resourceKind("note_template"),
       });
       onNotice(action === "delete" ? "Template deleted." : "Template saved.");
       onClose();
@@ -1414,33 +1366,31 @@ function NoteDialog({
 }
 
 export function TasksView({ onError, onNotice }: ViewProps) {
-  const [tasks, setTasks] = React.useState<RevenueAction[]>([]);
-  const [relationships, setRelationships] = React.useState<RevenueRelationship[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const queryClient = useQueryClient();
+  const actionsQuery = useRevenueActions("open", 100);
+  const relationshipsQuery = useRelationships();
   const [creating, setCreating] = React.useState(false);
   const [filter, setFilter] = React.useState<"all" | "today" | "overdue">("all");
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
+  const tasks = (actionsQuery.data ?? [])
+    .filter((action) => action.actionType === "follow_up_task" && action.channel === "task")
+    .sort((left, right) => (left.dueAt || "9999").localeCompare(right.dueAt || "9999"));
+  const relationships = (relationshipsQuery.data ?? []).filter(
+    (record) => record.kind !== "person",
+  );
+  const loading = actionsQuery.isPending || relationshipsQuery.isPending;
   const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const [actions, records] = await Promise.all([listActions("open", 100), listRelationships()]);
-      setTasks(
-        actions
-          .filter((action) => action.actionType === "follow_up_task" && action.channel === "task")
-          .sort((left, right) => (left.dueAt || "9999").localeCompare(right.dueAt || "9999")),
-      );
-      setRelationships(records.filter((record) => record.kind !== "person"));
-    } catch (error) {
-      onError(errMessage(error, "Could not load tasks."));
-    } finally {
-      setLoading(false);
-    }
-  }, [onError]);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: revenueActionKeys.all }),
+      queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
+    ]);
+  }, [queryClient]);
+
   React.useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
-  }, [load]);
+    const error = actionsQuery.error ?? relationshipsQuery.error;
+    if (error) onError(errMessage(error, "Could not load tasks."));
+  }, [actionsQuery.error, onError, relationshipsQuery.error]);
   const names = new Map(
     relationships.map((relationship) => [relationship.id, relationship.displayName]),
   );

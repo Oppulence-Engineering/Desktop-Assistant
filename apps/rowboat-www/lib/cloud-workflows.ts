@@ -4,6 +4,11 @@ import "client-only";
 
 import { z } from "zod";
 
+import {
+  fetchWorkflowRuns,
+  fetchWorkflowTasks,
+  fetchWorkflowTemplates,
+} from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 
 export const CloudTaskSchema = z.object({
@@ -234,11 +239,6 @@ export const CloudScheduleSchema = z.object({
 export type CloudSchedule = z.infer<typeof CloudScheduleSchema>;
 
 const TaskListSchema = z.object({ tasks: z.array(CloudTaskSchema) });
-const TemplateListSchema = z.object({ templates: z.array(CloudTaskTemplateSchema) });
-const RunListSchema = z.object({
-  runs: z.array(CloudRunSchema),
-  nextCursor: z.string().optional(),
-});
 const EventListSchema = z.object({ events: z.array(CloudRunEventSchema) });
 
 async function workflowRequest<T>(
@@ -284,12 +284,12 @@ export async function ensureFirstPartyWorkflows(): Promise<CloudTask[]> {
   ).tasks;
 }
 
-export async function listCloudTasks(): Promise<CloudTask[]> {
-  return (await workflowRequest("/background-tasks", TaskListSchema)).tasks;
+export async function listCloudTasks(signal?: AbortSignal): Promise<CloudTask[]> {
+  return fetchWorkflowTasks(signal) as Promise<CloudTask[]>;
 }
 
-export async function listCloudTemplates(): Promise<CloudTaskTemplate[]> {
-  return (await workflowRequest("/background-task-templates", TemplateListSchema)).templates;
+export async function listCloudTemplates(signal?: AbortSignal): Promise<CloudTaskTemplate[]> {
+  return fetchWorkflowTemplates(signal) as Promise<CloudTaskTemplate[]>;
 }
 
 export async function createCloudTask(input: {
@@ -373,12 +373,9 @@ export type RunFilters = {
 
 export async function listCloudRuns(
   filters: RunFilters = {},
+  signal?: AbortSignal,
 ): Promise<{ runs: CloudRun[]; nextCursor?: string }> {
-  const params = new URLSearchParams({ limit: "50" });
-  for (const [key, value] of Object.entries(filters)) {
-    if (value && value !== "all") params.set(key, value);
-  }
-  return workflowRequest(`/background-task-runs?${params}`, RunListSchema);
+  return fetchWorkflowRuns(filters, signal) as Promise<{ runs: CloudRun[]; nextCursor?: string }>;
 }
 
 export async function getCloudSchedule(slug: string): Promise<CloudSchedule> {

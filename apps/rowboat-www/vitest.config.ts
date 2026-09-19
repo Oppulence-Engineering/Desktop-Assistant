@@ -61,6 +61,8 @@ export default defineConfig({
       "quality/**/*.test.{ts,tsx}",
       "components/features/**/*.test.tsx",
       "app/**/_components/**/*.test.tsx",
+      "hooks/**/*.test.{ts,tsx}",
+      "lib/**/*.test.{ts,tsx}",
     ],
     coverage: {
       provider: "v8",

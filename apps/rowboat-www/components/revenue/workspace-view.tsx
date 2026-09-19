@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
+import { useRelationshipRefreshBlocker } from "@/hooks/queries/use-workflows";
+import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { ArrowClockwise, LinkSimple, Plugs, ShieldCheck } from "@/lib/icons";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
 
@@ -14,9 +17,7 @@ import { Spinner } from "@oppulence/ui/components/spinner";
 import { Input } from "@oppulence/ui/components/input";
 import {
   linkWorkspace,
-  listRelationshipSourceStatuses,
   relativeTime,
-  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   resyncRelationshipSource,
   RevenueAPIError,
 } from "@/lib/revenue";
@@ -27,7 +28,6 @@ import {
 } from "@/components/features/sim-product/sim-product-frame";
 import { Field, errMessage } from "@/components/revenue/shared";
 import { capture, RevenueEvents } from "@/lib/analytics";
-import { listCloudRuns } from "@/lib/cloud-workflows";
 import { cn } from "@/lib/utils";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/types/revenue";
 
@@ -53,18 +53,8 @@ export function WorkspaceView({
   onOpenConnectors?: () => void;
 }) {
   const queryClient = useQueryClient();
-  const sourcesQuery = useQuery({
-    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
-    queryFn: listRelationshipSourceStatuses,
-  });
-  const autoRefreshQuery = useQuery({
-    queryKey: ["relationship-auto-refresh-blocker"],
-    queryFn: async () => {
-      const { runs } = await listCloudRuns({ slug: "oppulence-relationship-refresh" });
-      const latest = runs[0];
-      return latest?.status === "failed" ? latest.errorCode : "";
-    },
-  });
+  const sourcesQuery = useRelationshipSourceStatuses();
+  const autoRefreshQuery = useRelationshipRefreshBlocker();
 
   const [orgId, setOrgId] = React.useState("");
   const [wsId, setWsId] = React.useState("");
@@ -73,13 +63,13 @@ export function WorkspaceView({
   const refreshSources = React.useCallback(
     async (updated: RelationshipSourceStatus) => {
       queryClient.setQueryData<RelationshipSourceStatus[]>(
-        RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+        relationshipSourceKeys.list(),
         (current) =>
           (current ?? []).map((item) =>
             item.connectionId === updated.connectionId ? updated : item,
           ),
       );
-      await queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.lists() });
     },
     [queryClient],
   );

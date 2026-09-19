@@ -15,7 +15,7 @@ export default createRule({
     schema: pathOptionsSchema,
     messages: {
       location:
-        "WEB019 React component is outside an approved feature, route-private, managed, or infrastructure root. Use `npm run component:new`.",
+        "WEB019 React component is outside an approved feature, route-private, managed, or infrastructure root. Use `npm run gen -- component`.",
     },
   },
   defaultOptions: [

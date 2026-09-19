@@ -4,15 +4,15 @@ import "client-only";
 
 import * as React from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@oppulence/ui/components/button";
+import { useComposioConnections, useComposioToolkits } from "@/hooks/queries/use-composio";
+import { ComposioUnconfiguredError } from "@/hooks/queries/utils/fetch-composio";
+import { composioKeys } from "@/hooks/queries/utils/composio-keys";
 import {
-  ComposioUnconfiguredError,
   disconnectComposio,
-  listComposioConnections,
-  listComposioToolkits,
   startComposioConnection,
   type ComposioConnection,
-  type ComposioToolkit,
 } from "@/lib/api/composio/client";
 
 /** An active connection wins; otherwise the most recently created one does. */
@@ -36,42 +36,39 @@ export function ComposioConnections({
   /** Receives the offered product slugs, so a caller can drop its own duplicate cards. */
   onToolkits?: (slugs: string[]) => void;
 } = {}) {
-  const [toolkits, setToolkits] = React.useState<ComposioToolkit[]>([]);
-  const [connections, setConnections] = React.useState<ComposioConnection[]>([]);
-  const [state, setState] = React.useState<"loading" | "ready" | "unconfigured" | "error">(
-    "loading",
-  );
+  const queryClient = useQueryClient();
+  const toolkitsQuery = useComposioToolkits();
+  const connectionsQuery = useComposioConnections();
+  const toolkits = toolkitsQuery.data ?? [];
+  const connections = connectionsQuery.data ?? [];
+  const state =
+    toolkitsQuery.isPending || connectionsQuery.isPending
+      ? "loading"
+      : toolkitsQuery.error instanceof ComposioUnconfiguredError ||
+          connectionsQuery.error instanceof ComposioUnconfiguredError
+        ? "unconfigured"
+        : toolkitsQuery.isError || connectionsQuery.isError
+          ? "error"
+          : "ready";
   const [busy, setBusy] = React.useState("");
   const [error, setError] = React.useState("");
-  const [refreshKey, setRefreshKey] = React.useState(0);
   // Set when the user leaves for Composio's page, so their return refreshes the
   // list. Without it a finished connection still reads "not connected".
   const awaitingConnection = React.useRef(false);
 
   React.useEffect(() => {
-    const controller = new AbortController();
-    Promise.all([
-      listComposioToolkits(controller.signal),
-      listComposioConnections(controller.signal),
-    ])
-      .then(([kits, linked]) => {
-        setToolkits(kits);
-        setConnections(linked);
-        setState("ready");
-        onToolkits?.(kits.map((kit) => kit.slug));
-      })
-      .catch((cause: unknown) => {
-        if (controller.signal.aborted) return;
-        setState(cause instanceof ComposioUnconfiguredError ? "unconfigured" : "error");
-      });
-    return () => controller.abort();
-  }, [refreshKey, onToolkits]);
+    if (state === "ready") onToolkits?.(toolkits.map((kit) => kit.slug));
+  }, [onToolkits, state, toolkits]);
+
+  const refreshLists = React.useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: composioKeys.all });
+  }, [queryClient]);
 
   React.useEffect(() => {
     const refreshOnReturn = () => {
       if (document.visibilityState !== "visible" || !awaitingConnection.current) return;
       awaitingConnection.current = false;
-      setRefreshKey((key) => key + 1);
+      refreshLists();
     };
     document.addEventListener("visibilitychange", refreshOnReturn);
     window.addEventListener("focus", refreshOnReturn);
@@ -79,7 +76,7 @@ export function ComposioConnections({
       document.removeEventListener("visibilitychange", refreshOnReturn);
       window.removeEventListener("focus", refreshOnReturn);
     };
-  }, []);
+  }, [refreshLists]);
 
   // A product can hold several connections: retrying before the list refreshed
   // left a pending one behind each time. Show the live one, else the newest.
@@ -119,7 +116,7 @@ export function ComposioConnections({
     setError("");
     try {
       await disconnectComposio(connection.id);
-      setRefreshKey((key) => key + 1);
+      refreshLists();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not disconnect.");
     } finally {

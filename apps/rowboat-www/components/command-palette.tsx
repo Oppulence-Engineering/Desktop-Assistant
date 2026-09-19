@@ -33,9 +33,9 @@ import {
 import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
+import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relationships";
 import type { SessionMeta } from "@/lib/chat-sessions";
-import { listRelationships, semanticSearch, type SemanticMatch } from "@/lib/revenue";
-import type { RevenueRelationship } from "@/types/revenue";
+import type { SemanticMatch } from "@/lib/revenue";
 
 export function CommandPalette({
   open,
@@ -68,71 +68,33 @@ export function CommandPalette({
   onToggleSidebar: () => void;
 }) {
   const [query, setQuery] = React.useState("");
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
   const [searchMode, setSearchMode] = React.useState<"accounts" | "mail">("accounts");
-  const [accounts, setAccounts] = React.useState<RevenueRelationship[]>([]);
-  const [mailMatches, setMailMatches] = React.useState<SemanticMatch[]>([]);
-  const [semanticAvailable, setSemanticAvailable] = React.useState<boolean | null>(null);
-  const [searchError, setSearchError] = React.useState(false);
-  const [searching, setSearching] = React.useState(false);
   const { setTheme } = useThemePreference();
+  const term = debouncedQuery.trim();
+  const searchEnabled = open && term.length >= 2;
+  const accountsQuery = useRelationships({ q: term }, searchEnabled && searchMode === "accounts");
+  const mailQuery = useSemanticSearch(term, searchEnabled && searchMode === "mail");
+  const accounts = (accountsQuery.data ?? []).slice(0, 6);
+  const mailMatches: SemanticMatch[] = (mailQuery.data?.matches ?? []).slice(0, 6);
+  const semanticAvailable = mailQuery.data?.available ?? null;
+  const searchError = accountsQuery.isError || mailQuery.isError;
+  const searching = accountsQuery.isFetching || mailQuery.isFetching;
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 200);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
   const runAnd = (fn: () => void) => () => {
     fn();
     onOpenChange(false);
   };
 
-  // The palette advertised "search" from the most prominent control in the
-  // sidebar, but only ever filtered this static command list — typing the name
-  // of a real account returned "No results found". Accounts are what an
-  // operator looks for by name, so they are what it searches.
-  React.useEffect(() => {
-    const term = query.trim();
-    if (!open || term.length < 2) {
-      setAccounts([]);
-      setMailMatches([]);
-      setSemanticAvailable(null);
-      setSearchError(false);
-      setSearching(false);
-      return;
-    }
-    const controller = new AbortController();
-    setSearching(true);
-    setSearchError(false);
-    const timer = setTimeout(() => {
-      const request =
-        searchMode === "mail"
-          ? semanticSearch(term, controller.signal).then((result) => {
-              setSemanticAvailable(result.available);
-              setMailMatches(result.matches.slice(0, 6));
-              setAccounts([]);
-            })
-          : listRelationships({ q: term }, controller.signal).then((rows) => {
-              setAccounts(rows.slice(0, 6));
-              setMailMatches([]);
-              setSemanticAvailable(null);
-            });
-      void request
-        .catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === "AbortError") return;
-          if (!controller.signal.aborted) {
-            setAccounts([]);
-            setMailMatches([]);
-            setSearchError(true);
-          }
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setSearching(false);
-        });
-    }, 200);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [open, query, searchMode]);
-
   React.useEffect(() => {
     if (!open) {
       setQuery("");
+      setDebouncedQuery("");
       setSearchMode("accounts");
     }
   }, [open]);

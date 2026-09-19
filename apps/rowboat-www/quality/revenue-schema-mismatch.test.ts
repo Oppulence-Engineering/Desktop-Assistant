@@ -2,17 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ dashboardFetch: vi.fn() }));
 
-vi.mock("@/lib/auth/client", () => ({
-  dashboardFetch: mocks.dashboardFetch,
+vi.mock("@/lib/auth/dashboard-fetch", () => ({
+  dashboardRequest: mocks.dashboardFetch,
   toDashboardAPIPath: (path: string) => `/api/rowboat/v1${path}`,
+  redirectBrowserIfUnauthorized: () => undefined,
+  loginURL: () => "/login",
 }));
 
 const respond = (body: unknown) =>
-  mocks.dashboardFetch.mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve(body),
-  });
+  mocks.dashboardFetch.mockResolvedValue(
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
 
 describe("a response that does not match its contract", () => {
   beforeEach(() => {

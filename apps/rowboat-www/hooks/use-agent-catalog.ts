@@ -3,15 +3,9 @@
 import "client-only";
 
 import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 
-import { AgentsResponseSchema, parseAgentsResponse } from "@/lib/agents/agent-schemas";
+import { useAgentSlugs } from "@/hooks/queries/use-agents";
 import { usePref } from "@/lib/console-prefs";
-import { requestDashboardJson } from "@/lib/dashboard-json";
-
-function stripExtension(name: string): string {
-  return name.replace(/\.[^/.]+$/, "");
-}
 
 /**
  * Owns agent discovery and selection. Selection remains an explicit override
@@ -22,16 +16,7 @@ export function useAgentCatalog() {
   const preferredAgent = usePref("default-agent");
   const [selectedAgentOverride, setSelectedAgent] = useState<string | null>(null);
   const configuredAgent = selectedAgentOverride ?? preferredAgent ?? "assistant";
-  const { data: discoveredAgents = [], refetch } = useQuery({
-    queryKey: ["dashboard", "agent-options"],
-    queryFn: async () => {
-      const response = await requestDashboardJson("/agents", AgentsResponseSchema, {
-        softFail: true,
-      });
-      if (!response) return [];
-      return parseAgentsResponse(response).map((agent) => stripExtension(agent.slug));
-    },
-  });
+  const { data: discoveredAgents = [], refetch } = useAgentSlugs();
   const agentOptions = useMemo(
     () => Array.from(new Set(["assistant", ...discoveredAgents])),
     [discoveredAgents],

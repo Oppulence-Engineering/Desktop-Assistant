@@ -56,6 +56,13 @@ import { Textarea } from "@oppulence/ui/components/textarea";
 import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
 import {
+  useWorkflowRuns,
+  useWorkflowTasks,
+  useWorkflowTemplates,
+} from "@/hooks/queries/use-workflows";
+import { workflowKeys } from "@/hooks/queries/utils/workflow-keys";
+import { useQueryClient } from "@tanstack/react-query";
+import {
   cancelCloudRun,
   compileVisualWorkflow,
   createCloudTask,
@@ -64,9 +71,6 @@ import {
   getCloudSchedule,
   instantiateCloudTemplate,
   listCloudRunEvents,
-  listCloudRuns,
-  listCloudTasks,
-  listCloudTemplates,
   retryCloudRun,
   taskCron,
   taskVisualWorkflow,
@@ -1032,10 +1036,7 @@ export function CloudWorkflowsView({
   initialRunId?: string;
   initialSlug?: string;
 }) {
-  const [tasks, setTasks] = React.useState<CloudTask[]>([]);
-  const [templates, setTemplates] = React.useState<CloudTaskTemplate[]>([]);
-  const [runs, setRuns] = React.useState<CloudRun[]>([]);
-  const [nextCursor, setNextCursor] = React.useState<string>();
+  const queryClient = useQueryClient();
   const [selectedSlug, setSelectedSlug] = React.useState(initialSlug || "");
   const [selectedRun, setSelectedRun] = React.useState<CloudRun | null>(null);
   const [events, setEvents] = React.useState<CloudRunEvent[]>([]);
@@ -1046,9 +1047,20 @@ export function CloudWorkflowsView({
   const [statusFilter, setStatusFilter] = React.useState<FilterValue<CloudRunStatus>>("all");
   const [triggerFilter, setTriggerFilter] = React.useState<FilterValue<CloudRunTrigger>>("all");
   const [executorFilter, setExecutorFilter] = React.useState<"api" | "desktop" | "all">("all");
-  const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const tasksQuery = useWorkflowTasks();
+  const templatesQuery = useWorkflowTemplates();
+  const runsQuery = useWorkflowRuns({
+    status: statusFilter,
+    trigger: triggerFilter,
+    executor: executorFilter,
+  });
+  const tasks = (tasksQuery.data ?? []) as CloudTask[];
+  const templates = (templatesQuery.data ?? []) as CloudTaskTemplate[];
+  const runs = (runsQuery.data?.pages.flatMap((page) => page.runs) ?? []) as CloudRun[];
+  const nextCursor = runsQuery.hasNextPage ? runsQuery.data?.pages.at(-1)?.nextCursor : undefined;
+  const loading = tasksQuery.isPending || templatesQuery.isPending || runsQuery.isPending;
 
   const selectedTask = tasks.find((task) => task.slug === selectedSlug);
   const selectedTaskSlug = selectedTask?.slug;
@@ -1063,65 +1075,42 @@ export function CloudWorkflowsView({
     if (run) setSelectedSlug(run.slug);
   }, []);
 
-  const loadRuns = React.useCallback(
-    async (cursor?: string, append = false) => {
-      const result = await listCloudRuns({
-        status: statusFilter,
-        trigger: triggerFilter,
-        executor: executorFilter,
-        cursor,
-      });
-      setRuns((current) =>
-        append
-          ? [...new Map([...current, ...result.runs].map((run) => [run.id, run])).values()]
-          : result.runs,
-      );
-      setSelectedRun((current) => {
-        if (!current)
-          return initialRunId
-            ? result.runs.find((run) => run.runId === initialRunId) || null
-            : null;
-        return result.runs.find((run) => run.runId === current.runId) || current;
-      });
-      setNextCursor(result.nextCursor);
-    },
-    [executorFilter, initialRunId, statusFilter, triggerFilter],
-  );
-
-  const loadDefinitions = React.useCallback(async () => {
+  const refresh = React.useCallback(async () => {
     setError(null);
     try {
       await ensureFirstPartyWorkflows();
-      const [nextTasks, nextTemplates] = await Promise.all([
-        listCloudTasks(),
-        listCloudTemplates(),
-      ]);
-      setTasks(nextTasks);
-      setTemplates(nextTemplates);
-      setSelectedSlug((current) => current || nextTasks[0]?.slug || "");
+      await queryClient.invalidateQueries({ queryKey: workflowKeys.all });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load workflows");
-    } finally {
-      setLoading(false);
     }
-  }, []);
-
-  const refresh = React.useCallback(async () => {
-    await Promise.all([loadDefinitions(), loadRuns()]);
-  }, [loadDefinitions, loadRuns]);
+  }, [queryClient]);
 
   React.useEffect(() => {
-    queueMicrotask(() => void loadDefinitions());
-  }, [loadDefinitions]);
+    void ensureFirstPartyWorkflows()
+      .then(() => queryClient.invalidateQueries({ queryKey: workflowKeys.tasks() }))
+      .catch((cause) =>
+        setError(cause instanceof Error ? cause.message : "Could not load workflows"),
+      );
+  }, [queryClient]);
 
   React.useEffect(() => {
-    queueMicrotask(
-      () =>
-        void loadRuns().catch((cause) =>
-          setError(cause instanceof Error ? cause.message : "Could not load workflow runs"),
-        ),
-    );
-  }, [loadRuns]);
+    setSelectedSlug((current) => current || tasks[0]?.slug || "");
+  }, [tasks]);
+
+  React.useEffect(() => {
+    setSelectedRun((current) => {
+      if (!current) {
+        return initialRunId ? runs.find((run) => run.runId === initialRunId) || null : null;
+      }
+      return runs.find((run) => run.runId === current.runId) || current;
+    });
+  }, [initialRunId, runs]);
+
+  React.useEffect(() => {
+    const cause = tasksQuery.error ?? templatesQuery.error ?? runsQuery.error;
+    if (!cause) return;
+    setError(cause instanceof Error ? cause.message : "Could not load workflows");
+  }, [runsQuery.error, tasksQuery.error, templatesQuery.error]);
 
   React.useEffect(() => {
     if (!initialSlug || !initialRunId) return;
@@ -1180,13 +1169,13 @@ export function CloudWorkflowsView({
       };
     const timer = window.setInterval(() => {
       void load();
-      void loadRuns();
+      void queryClient.invalidateQueries({ queryKey: workflowKeys.all });
     }, 5000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [loadRuns, selectedRunID, selectedRunSlug, selectedRunStatus]);
+  }, [queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
 
   const perform = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -1200,9 +1189,11 @@ export function CloudWorkflowsView({
     }
   };
 
+  const invalidateRuns = () => queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+
   const replaceTask = (task: CloudTask) => {
-    setTasks((current) =>
-      [...current.filter((item) => item.id !== task.id), task].sort(
+    queryClient.setQueryData(workflowKeys.tasks(), (current: CloudTask[] | undefined) =>
+      [...(current ?? []).filter((item) => item.id !== task.id), task].sort(
         (a, b) => Number(b.systemManaged) - Number(a.systemManaged) || a.name.localeCompare(b.name),
       ),
     );
@@ -1253,16 +1244,16 @@ export function CloudWorkflowsView({
             selectedRun &&
             void perform(async () => {
               selectRun(await cancelCloudRun(selectedRun));
-              await loadRuns();
+              await invalidateRuns();
             })
           }
           onExecutorFilter={setExecutorFilter}
-          onLoadMore={() => nextCursor && void loadRuns(nextCursor, true)}
+          onLoadMore={() => nextCursor && void runsQuery.fetchNextPage()}
           onRetry={() =>
             selectedRun &&
             void perform(async () => {
               selectRun(await retryCloudRun(selectedRun));
-              await loadRuns();
+              await invalidateRuns();
             })
           }
           onSelectRun={selectRun}
@@ -1287,14 +1278,14 @@ export function CloudWorkflowsView({
             selectedRun &&
             void perform(async () => {
               selectRun(await cancelCloudRun(selectedRun));
-              await loadRuns();
+              await invalidateRuns();
             })
           }
           onRetry={() =>
             selectedRun &&
             void perform(async () => {
               selectRun(await retryCloudRun(selectedRun));
-              await loadRuns();
+              await invalidateRuns();
             })
           }
           onRun={() =>
@@ -1304,7 +1295,7 @@ export function CloudWorkflowsView({
                 "Started from the visual workflow editor.",
               );
               selectRun(run);
-              await loadRuns();
+              await invalidateRuns();
             })
           }
           onSelectRun={selectRun}

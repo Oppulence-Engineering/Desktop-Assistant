@@ -3,6 +3,7 @@
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { Toaster } from "@oppulence/ui/components/sonner";
 import { ThemeProvider } from "next-themes";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { DevProviders } from "@/components/providers/dev-providers";
@@ -21,11 +22,13 @@ export function AppProviders({
 }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <AppRouterCacheProvider options={{ key: "css" }}>
-        {children}
-        <DevProviders enabled={devToolsEnabled} />
-        <Toaster richColors closeButton position="bottom-right" />
-      </AppRouterCacheProvider>
+      <NuqsAdapter>
+        <AppRouterCacheProvider options={{ key: "css" }}>
+          {children}
+          <DevProviders enabled={devToolsEnabled} />
+          <Toaster richColors closeButton position="bottom-right" />
+        </AppRouterCacheProvider>
+      </NuqsAdapter>
     </ThemeProvider>
   );
 }

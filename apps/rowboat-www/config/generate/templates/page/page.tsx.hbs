@@ -1,0 +1,38 @@
+{{#if hasPrefetch}}import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+
+import { {{panelPascal}} } from "./_components/{{panelName}}/{{panelName}}";
+import { {{prefetchName}} } from "./prefetch";
+import { {{searchCacheName}} } from "./search-params";
+import { getQueryClient } from "@/lib/query/get-query-client";
+{{else}}import { {{panelPascal}} } from "./_components/{{panelName}}/{{panelName}}";
+import { {{searchCacheName}} } from "./search-params";
+{{/if}}
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Authenticated {{title}} route. The page stays a Server Component; interactivity
+ * lives in the route-private panel. Owned by `{{name}}.lit.ts`.
+ */
+export const instant = false;
+
+export const metadata = {
+  title: "{{title}} - Oppulence",
+  description: "{{summary}}",
+};
+
+export default async function {{pascalName}}Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const raw = await searchParams;
+  {{searchCacheName}}.parse(raw);
+{{#if hasPrefetch}}  const queryClient = getQueryClient();
+  await {{prefetchName}}(queryClient);
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <{{panelPascal}} />
+    </HydrationBoundary>
+  );
+{{else}}  return <{{panelPascal}} />;
+{{/if}}
+}

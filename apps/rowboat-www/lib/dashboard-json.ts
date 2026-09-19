@@ -1,10 +1,10 @@
-"use client";
-
-import "client-only";
-
 import { z } from "zod";
 
-import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import {
+  dashboardRequest,
+  redirectBrowserIfUnauthorized,
+  toDashboardAPIPath,
+} from "@/lib/auth/dashboard-fetch";
 
 const ErrorResponseSchema = z.union([
   z.string(),
@@ -49,13 +49,14 @@ export async function requestDashboardJson<T>(
 ): Promise<T | null> {
   const { allow404, softFail, ...requestInit } = options;
   const optionalFailure = allow404 || softFail;
-  const response = await dashboardFetch(toDashboardAPIPath(url), {
+  const response = await dashboardRequest(toDashboardAPIPath(url), {
     ...requestInit,
     headers: {
       "Content-Type": "application/json",
       ...(requestInit.headers ?? {}),
     },
   });
+  redirectBrowserIfUnauthorized(response.status);
   const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
   const text = await response.text();
 

@@ -8,54 +8,35 @@ import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import {
   CreateConsoleResource201Response,
   CreateConsoleResourceBody,
-  GetConsolePreferences200Response,
-  ListConsoleResources200Response,
   PatchConsolePreferences200Response,
-  PatchConsolePreferencesBody,
   PatchConsoleResource200Response,
   PatchConsoleResourceBody,
 } from "@/lib/api/generated/zod/console/console";
+import {
+  ConsoleAPIError,
+  isConsoleRouteUnavailable,
+  SyncedConsolePreferencesPatchSchema,
+  SyncedConsolePreferencesSchema,
+  type ConsolePreferences,
+  type ConsolePreferencesPatch,
+  type ConsoleResource,
+  type ConsoleResourceKind,
+} from "@/lib/console-contract";
+import {
+  fetchConsolePreferences,
+  fetchConsoleResources,
+} from "@/hooks/queries/utils/fetch-console";
 
-/**
- * Only preferences with a real rowboat-www consumer cross the adapter. The
- * API's wider schema is intentionally not surfaced until matching behavior
- * exists in this client.
- */
-const SyncedConsolePreferencesSchema = GetConsolePreferences200Response.transform(
-  ({ defaultAgentSlug, displayName, shareUsageData }) => ({
-    defaultAgentSlug,
-    displayName,
-    shareUsageData,
-  }),
-);
-const SyncedConsolePreferencesPatchSchema = PatchConsolePreferencesBody.pick({
-  defaultAgentSlug: true,
-  displayName: true,
-  shareUsageData: true,
-});
-
-export type ConsolePreferences = z.infer<typeof SyncedConsolePreferencesSchema>;
-export type ConsolePreferencesPatch = z.infer<typeof SyncedConsolePreferencesPatchSchema>;
-export type ConsoleResource = z.infer<typeof CreateConsoleResource201Response>;
+export {
+  ConsoleAPIError,
+  isConsoleRouteUnavailable,
+  type ConsolePreferences,
+  type ConsolePreferencesPatch,
+  type ConsoleResource,
+  type ConsoleResourceKind,
+};
 export type ConsoleResourceCreate = z.infer<typeof CreateConsoleResourceBody>;
 export type ConsoleResourcePatch = z.infer<typeof PatchConsoleResourceBody>;
-export type ConsoleResourceKind = ConsoleResource["kind"];
-
-export class ConsoleAPIError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code?: string,
-  ) {
-    super(message);
-    this.name = "ConsoleAPIError";
-  }
-}
-
-/** Console routes are newer than some deployed rowboat-api builds. */
-export function isConsoleRouteUnavailable(error: unknown): boolean {
-  return error instanceof ConsoleAPIError && error.status === 404;
-}
 
 const ConsoleErrorBodySchema = z.object({
   code: z.string().optional(),
@@ -106,8 +87,7 @@ async function request<T>(
   return schema.parse(body);
 }
 
-export const getConsolePreferences = (signal?: AbortSignal) =>
-  request("/console/preferences", SyncedConsolePreferencesSchema, { signal });
+export const getConsolePreferences = (signal?: AbortSignal) => fetchConsolePreferences(signal);
 
 export const patchConsolePreferences = (input: ConsolePreferencesPatch, signal?: AbortSignal) =>
   request("/console/preferences", PatchConsolePreferences200Response, {
@@ -116,22 +96,8 @@ export const patchConsolePreferences = (input: ConsolePreferencesPatch, signal?:
     signal,
   }).then((preferences) => SyncedConsolePreferencesSchema.parse(preferences));
 
-export const listConsoleResources = async (kind: ConsoleResourceKind, signal?: AbortSignal) => {
-  const params = new URLSearchParams({ kind, limit: "100", offset: "0" });
-  try {
-    return await request(
-      `/console/resources?${params.toString()}`,
-      ListConsoleResources200Response,
-      {
-        signal,
-      },
-    ).then((page) => page.resources);
-  } catch (error) {
-    // Notes favorites/templates are optional until the console API is deployed.
-    if (isConsoleRouteUnavailable(error)) return [];
-    throw error;
-  }
-};
+export const listConsoleResources = (kind: ConsoleResourceKind, signal?: AbortSignal) =>
+  fetchConsoleResources(kind, signal);
 
 export const createConsoleResource = async (input: ConsoleResourceCreate, signal?: AbortSignal) => {
   try {
