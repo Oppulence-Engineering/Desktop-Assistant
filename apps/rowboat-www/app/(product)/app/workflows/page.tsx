@@ -1,6 +1,8 @@
 import { WorkflowsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
 import { workflowFocusFromParam } from "@/lib/product-navigation";
 
+export const instant = false;
+
 export default async function WorkflowsPage({
   searchParams,
 }: {
