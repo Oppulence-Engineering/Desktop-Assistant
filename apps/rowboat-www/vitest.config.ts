@@ -42,7 +42,10 @@ export default defineConfig({
     alias: {
       "@": root,
       "client-only": path.join(root, "quality/test-support/client-only.ts"),
+      "next/navigation": path.join(root, "quality/test-support/next-navigation.ts"),
       react: path.join(root, "node_modules/react"),
+      "react/jsx-runtime": path.join(root, "node_modules/react/jsx-runtime.js"),
+      "react/jsx-dev-runtime": path.join(root, "node_modules/react/jsx-dev-runtime.js"),
       "react-dom": path.join(root, "node_modules/react-dom"),
       "radix-ui": path.join(root, "node_modules/radix-ui"),
       "class-variance-authority": path.join(root, "node_modules/class-variance-authority"),
