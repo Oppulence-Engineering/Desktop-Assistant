@@ -28,6 +28,7 @@ import {
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
+import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
 import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
 import {
   Dialog,
@@ -77,7 +78,7 @@ const THREE_DAYS = 72 * 60 * 60 * 1000;
 const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live", "stale"]);
 
 export interface CommitmentQueueTransition {
-  kind: string;
+  kind: AppendCommitmentTransitionInput["kind"];
   idempotencyKey: string;
   reason?: string;
   dueAt?: string;
@@ -427,7 +428,7 @@ export function CommitmentQueue({
 
   const transition = async (
     item: CommitmentQueueItem,
-    kind: string,
+    kind: AppendCommitmentTransitionInput["kind"],
     extra: Partial<CommitmentQueueTransition> = {},
   ) => {
     setBusy(`${item.id}:${kind}`);

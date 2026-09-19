@@ -12,7 +12,7 @@ import { kebabFromCamel } from "./text";
  */
 
 const HTTP_METHODS = ["get", "post", "put", "patch", "delete"] as const;
-const SUCCESS_STATUSES = ["200", "201"] as const;
+const SUCCESS_STATUSES = ["200", "201", "202"] as const;
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 

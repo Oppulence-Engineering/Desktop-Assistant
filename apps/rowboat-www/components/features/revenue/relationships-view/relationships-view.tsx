@@ -91,6 +91,7 @@ import {
   ACTION_TYPE_LABELS,
   acknowledgeMissionControl,
   decideIdentityCandidate,
+  type DecideRelationshipIdentityCandidateInput,
   approveRecommendation,
   correctConversationReview,
   decideConversationReview,
@@ -1203,7 +1204,10 @@ function IdentityReviewInbox({
   const [busy, setBusy] = React.useState<string | null>(null);
   if (candidates.length === 0) return null;
 
-  const decide = async (candidate: RelationshipIdentityCandidate, decision: string) => {
+  const decide = async (
+    candidate: RelationshipIdentityCandidate,
+    decision: DecideRelationshipIdentityCandidateInput["decision"],
+  ) => {
     setBusy(`${candidate.id}:${decision}`);
     try {
       await decideIdentityCandidate(candidate.id, {

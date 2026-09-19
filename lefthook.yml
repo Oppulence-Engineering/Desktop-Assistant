@@ -141,19 +141,24 @@ commit-msg:
 # pre-push runs the slower checks once, before sharing code — too slow for every
 # commit, faster than waiting on CI. Skip on WIP branches with `LEFTHOOK=0 git push`.
 #
-# One sequential command on purpose: the renderer typecheck needs a FRESH
-# @x/shared/@x/preload build, and `pnpm test` rebuilds @x/shared too — running
-# them in parallel races on packages/shared/dist (a half-rebuilt dist makes tsc
-# fail with "Cannot find @x/shared/dist/*.js"). `typecheck` builds deps first,
-# then tsc -b; tests run after.
+# Each command is path-filtered so a Dockerfile edit does not rebuild Next and
+# a www-only push does not run `make verify`. Full www verify (knip, build,
+# OSV, e2e) stays on CI via `npm run verify:ci`.
+#
+# Desktop commands stay sequential on purpose: the renderer typecheck needs a
+# FRESH @x/shared/@x/preload build, and `pnpm test` rebuilds @x/shared too —
+# running them in parallel races on packages/shared/dist.
 pre-push:
   commands:
     desktop-checks:
       root: "apps/x/"
+      glob: "apps/x/**"
       run: pnpm run verify
     rowboat-api-checks:
       root: "apps/rowboat-api/"
+      glob: "apps/rowboat-api/**"
       run: make verify
     rowboat-www-checks:
       root: "apps/rowboat-www/"
-      run: npm run verify
+      glob: "apps/rowboat-www/**"
+      run: npm run verify:fast

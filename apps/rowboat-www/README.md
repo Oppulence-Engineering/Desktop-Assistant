@@ -163,7 +163,8 @@ npm run test:e2e:smoke   # authenticated report smoke (@smoke)
 npm run test:e2e:ui      # Playwright UI mode
 ```
 
-`verify:fast` is the development feedback loop. Run the complete `verify`
-gauntlet before opening or updating a pull request. E2E uses
+`verify:fast` is the development feedback loop and the www pre-push gate.
+Run the complete `verify` gauntlet before opening or updating a pull
+request; CI runs `verify:ci`. E2E uses
 `e2e/fake-rowboat-api.mjs` (connectors + revenue/report fixtures) and
 `e2e/auth.setup.ts` for seeded sessions.

@@ -55,6 +55,7 @@ import {
   dismissAction,
   QUEUE_FILTERS,
   snoozeAction,
+  type CreateActionInput,
 } from "@/lib/revenue/revenue";
 import {
   errMessage,
@@ -383,7 +384,15 @@ function CreateActionDialog({
   const relationshipsQuery = useRelationships();
   const relationships = relationshipsQuery.data ?? [];
   const [relationshipId, setRelationshipId] = React.useState("");
-  const [actionType, setActionType] = React.useState("warm_follow_up");
+  const createActionTypes = [
+    "warm_follow_up",
+    "proposal_nudge",
+    "referral_reconnect",
+    "customer_risk",
+    "meeting_follow_up",
+  ] as const satisfies readonly CreateActionInput["actionType"][];
+  const [actionType, setActionType] =
+    React.useState<CreateActionInput["actionType"]>("warm_follow_up");
   const [subject, setSubject] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [reason, setReason] = React.useState("");
@@ -455,18 +464,18 @@ function CreateActionDialog({
                 ))}
               </SelectContent>
             </Select>
-            <Select value={actionType} onValueChange={setActionType}>
+            <Select
+              value={actionType}
+              onValueChange={(value) => {
+                const next = createActionTypes.find((type) => type === value);
+                if (next) setActionType(next);
+              }}
+            >
               <SelectTrigger size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
-                {[
-                  "warm_follow_up",
-                  "proposal_nudge",
-                  "referral_reconnect",
-                  "customer_risk",
-                  "meeting_follow_up",
-                ].map((t) => (
+                {createActionTypes.map((t) => (
                   <SelectItem key={t} value={t}>
                     {t.replace(/_/g, " ")}
                   </SelectItem>

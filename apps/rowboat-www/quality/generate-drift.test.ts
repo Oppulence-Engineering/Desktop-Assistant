@@ -86,8 +86,8 @@ describe("WEB028 query-contract drift", () => {
       const schemas = importedOrvalSchemas(source);
       expect(schemas.length, `${relative} must import an Orval Zod schema`).toBeGreaterThan(0);
       expect(
-        schemas.some((schema) => /(?:200|201)Response$/.test(schema)),
-        `${relative} must bind an Orval 200/201 response schema`,
+        schemas.some((schema) => /(?:200|201|202)Response$/.test(schema)),
+        `${relative} must bind an Orval 200/201/202 response schema`,
       ).toBe(true);
       for (const schema of schemas) {
         expect(zodExports.has(schema), `${relative} imports missing ${schema}`).toBe(true);
