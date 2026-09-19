@@ -1205,6 +1205,24 @@
     zoom: var(--app-zoom);
     min-height: var(--app-vh);
   }
+
+  /*
+   * Auth uses the marketing split layout at full size. Body zoom + --app-vh
+   * compensation is for the product shell only; leaving it on sign-in shrinks
+   * the page and leaves a dark band below the white auth canvas.
+   */
+  body:has([data-auth-route]) {
+    --app-vh: 100svh;
+    zoom: 1;
+    min-height: 100svh;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  html:has([data-auth-route]) {
+    height: 100%;
+    background: #ffffff;
+  }
 }
 
 @layer utilities {
@@ -1217,7 +1235,8 @@
    * Counter-scale portalled overlays on marketing/legal routes only; the
    * authenticated shell uses transform scale on [data-product-shell] instead.
    */
-  body:not(:has([data-product-shell])) [data-radix-popper-content-wrapper] {
+  body:not(:has([data-product-shell])):not(:has([data-auth-route]))
+    [data-radix-popper-content-wrapper] {
     zoom: calc(1 / var(--app-zoom));
   }
 
@@ -4865,7 +4884,8 @@
   .sm-site .linear-page-title {
     color: var(--sm-ink);
     font-family:
-      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui, sans-serif;
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
     font-size: clamp(2.2rem, 4vw, 3.4rem);
     font-weight: 600;
     letter-spacing: -0.03em;
@@ -10284,6 +10304,7 @@
 @layer utilities {
   .sm-auth {
     display: grid;
+    height: 100svh;
     min-height: 100svh;
     background: #ffffff;
     grid-template-columns: 1fr;
@@ -11133,7 +11154,8 @@
   .sm-site .mk-changelog h2 {
     color: var(--sm-ink);
     font-family:
-      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui, sans-serif;
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
     font-size: clamp(1.25rem, 2vw, 1.4rem);
     font-weight: 600;
     letter-spacing: -0.022em;

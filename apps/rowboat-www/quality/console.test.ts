@@ -53,6 +53,14 @@ describe("validated console adapter", () => {
     await expect(listConsoleResources("note_template")).rejects.toThrow();
   });
 
+  it("treats a missing console route as an empty resource list", async () => {
+    auth.dashboardFetch.mockResolvedValue(
+      new Response(JSON.stringify({ code: "not_found", detail: "not found" }), { status: 404 }),
+    );
+
+    await expect(listConsoleResources("note_favorite")).resolves.toEqual([]);
+  });
+
   it("exposes stable API errors", async () => {
     auth.dashboardFetch.mockResolvedValue(
       new Response(JSON.stringify({ code: "console_unavailable", detail: "Try later" }), {

@@ -499,17 +499,17 @@ export function CommitmentQueue({
         />
         <SimProductToolbar aria-label="Register views" role="tablist">
           {REGISTER_VIEWS.map((registerView) => (
-            <button
+            <Chip
+              active={view === registerView.id}
               aria-selected={view === registerView.id}
-              className={cn(view === registerView.id && "opacity-100")}
               key={registerView.id}
               onClick={() => onViewChange?.(registerView.id)}
               role="tab"
               title={registerView.hint}
               type="button"
             >
-              <Chip>{registerView.label}</Chip>
-            </button>
+              {registerView.label}
+            </Chip>
           ))}
         </SimProductToolbar>
         <SimProductToolbar className="h-auto min-h-[38px] flex-wrap py-1.5">

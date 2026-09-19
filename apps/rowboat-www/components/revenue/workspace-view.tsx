@@ -1,28 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowClockwise, LinkSimple, Plugs, ShieldCheck } from "@/lib/icons";
+import { Badge as SimBadge, Chip } from "@sim/emcn";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@oppulence/ui/components/card";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemSeparator,
-  ItemTitle,
-} from "@oppulence/ui/components/item";
 import { Label } from "@oppulence/ui/components/label";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
@@ -31,13 +16,28 @@ import {
   linkWorkspace,
   listRelationshipSourceStatuses,
   relativeTime,
+  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   resyncRelationshipSource,
   RevenueAPIError,
 } from "@/lib/revenue";
-import { Field, errMessage, WorkspaceEmptyState } from "@/components/revenue/shared";
+import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
+import {
+  SimProductHeader,
+  SimProductPanel,
+} from "@/components/features/sim-product/sim-product-frame";
+import { Field, errMessage } from "@/components/revenue/shared";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import { listCloudRuns } from "@/lib/cloud-workflows";
+import { cn } from "@/lib/utils";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/types/revenue";
+
+const CONNECTORS_SECTION_ID = "sources-connectors";
+
+function scrollToConnectors() {
+  document
+    .getElementById(CONNECTORS_SECTION_ID)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 export function WorkspaceView({
   workspace,
@@ -52,46 +52,41 @@ export function WorkspaceView({
   onNotice: (m: string) => void;
   onOpenConnectors?: () => void;
 }) {
-  // A page called "Sources" that says nothing about sources is where users
-  // were sent when told to reconnect, and it showed them a workspace-linking
-  // form instead. Connection health belongs here, above everything else.
-  const [sources, setSources] = React.useState<RelationshipSourceStatus[] | null>(null);
-  const [autoRefreshBlocker, setAutoRefreshBlocker] = React.useState("");
-  React.useEffect(() => {
-    let cancelled = false;
-    void listRelationshipSourceStatuses()
-      .then((rows) => {
-        if (!cancelled) setSources(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setSources([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  React.useEffect(() => {
-    let cancelled = false;
-    void listCloudRuns({ slug: "oppulence-relationship-refresh" })
-      .then(({ runs }) => {
-        if (!cancelled) {
-          const latest = runs[0];
-          setAutoRefreshBlocker(latest?.status === "failed" ? latest.errorCode : "");
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const queryClient = useQueryClient();
+  const sourcesQuery = useQuery({
+    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+    queryFn: listRelationshipSourceStatuses,
+  });
+  const autoRefreshQuery = useQuery({
+    queryKey: ["relationship-auto-refresh-blocker"],
+    queryFn: async () => {
+      const { runs } = await listCloudRuns({ slug: "oppulence-relationship-refresh" });
+      const latest = runs[0];
+      return latest?.status === "failed" ? latest.errorCode : "";
+    },
+  });
 
   const [orgId, setOrgId] = React.useState("");
   const [wsId, setWsId] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
+  const [linkBusy, setLinkBusy] = React.useState(false);
+
+  const refreshSources = React.useCallback(
+    async (updated: RelationshipSourceStatus) => {
+      queryClient.setQueryData<RelationshipSourceStatus[]>(
+        RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+        (current) =>
+          (current ?? []).map((item) =>
+            item.connectionId === updated.connectionId ? updated : item,
+          ),
+      );
+      await queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
+    },
+    [queryClient],
+  );
 
   if (!workspace) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 p-3">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-24 w-full rounded-[2px]" />
       </div>
@@ -99,10 +94,12 @@ export function WorkspaceView({
   }
 
   const linked = workspace.mode === "linked" && workspace.status === "active";
+  const sources = sourcesQuery.data;
+  const autoRefreshBlocker = autoRefreshQuery.data ?? "";
 
-  const submit = async () => {
+  const submitLink = async () => {
     if (!wsId.trim()) return;
-    setBusy(true);
+    setLinkBusy(true);
     onError("");
     try {
       const ws = await linkWorkspace({
@@ -112,139 +109,109 @@ export function WorkspaceView({
       onLinked(ws);
       capture(RevenueEvents.WorkspaceLinked);
       onNotice("Workspace linked — governed sending is now enabled.");
-    } catch (e) {
+    } catch (error) {
       onError(
-        e instanceof RevenueAPIError && e.code === "facade_unavailable"
+        error instanceof RevenueAPIError && error.code === "facade_unavailable"
           ? "Policy preflight isn't configured on the server yet, so linking can't be completed. Drafting still works in local mode."
-          : errMessage(e, "Could not link the workspace."),
+          : errMessage(error, "Could not link the workspace."),
       );
     } finally {
-      setBusy(false);
+      setLinkBusy(false);
     }
   };
 
-  if (sources === null) {
-    return (
-      <div className="flex flex-col gap-2 p-4">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-24 w-full rounded-[2px]" />
-      </div>
-    );
-  }
-
-  if (sources.length === 0) {
-    return (
-      <WorkspaceEmptyState
-        action={
-          onOpenConnectors ? (
-            <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={onOpenConnectors}
-              size="sm"
-            >
+  return (
+    <div className="flex min-h-full w-full min-w-0 flex-col gap-3 p-3" data-slot="sources-view">
+      <SimProductPanel className="flex min-h-0 flex-1 flex-col">
+        <SimProductHeader
+          actions={
+            sourcesQuery.isLoading
+              ? "Loading…"
+              : `${sources?.length ?? 0} source${sources?.length === 1 ? "" : "s"}`
+          }
+          title="Connected sources"
+        />
+        {sourcesQuery.isLoading ? (
+          <div className="p-4">
+            <Skeleton className="h-16 w-full rounded-[2px]" />
+          </div>
+        ) : sourcesQuery.isError || !sources?.length ? (
+          <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
+            <p>
+              No evidence sources are connected yet. Connect Gmail, Calendar, Slack, or CRM below.
+            </p>
+            <Button onClick={scrollToConnectors} size="sm" type="button">
               <Plugs /> Connect sources
             </Button>
-          ) : undefined
-        }
-        description="Connect Gmail, Calendar, Slack, or CRM so Oppulence can read relationship evidence. Nothing is sent without your approval."
-        image="sources"
-        learnMore={[
-          { label: "Sources are read-only observers" },
-          { label: "Sync health stays visible" },
-        ]}
-        title="Sources"
-      />
-    );
-  }
-
-  return (
-    <div className="flex w-full min-w-0 flex-col gap-6">
-      <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
-        <CardHeader className="flex-row items-center justify-between border-b border-border px-4 py-3">
-          <CardTitle className="text-sm font-medium text-primary">Connected sources</CardTitle>
-          {onOpenConnectors ? (
-            <CardAction>
-              <Button onClick={onOpenConnectors} size="sm" variant="outline">
-                Manage connectors
-              </Button>
-            </CardAction>
-          ) : null}
-        </CardHeader>
-        <CardContent className="p-0">
-          <ItemGroup className="text-sm">
-            {sources.map((source, index) => (
-              <React.Fragment key={`${source.source}:${source.sourceAccountId}`}>
-                {index > 0 ? <ItemSeparator /> : null}
-                <SourceRow
-                  autoRefreshBlocker={autoRefreshBlocker}
-                  onError={onError}
-                  onNotice={onNotice}
-                  onUpdated={(updated) =>
-                    setSources((current) =>
-                      (current ?? []).map((item) =>
-                        item.connectionId === updated.connectionId ? updated : item,
-                      ),
-                    )
-                  }
-                  source={source}
-                />
-              </React.Fragment>
+          </div>
+        ) : (
+          <div className="divide-y divide-[var(--border)]">
+            {sources.map((source) => (
+              <SourceRow
+                autoRefreshBlocker={autoRefreshBlocker}
+                key={`${source.source}:${source.sourceAccountId}`}
+                onError={onError}
+                onNotice={onNotice}
+                onOpenConnectors={scrollToConnectors}
+                onUpdated={refreshSources}
+                source={source}
+              />
             ))}
-          </ItemGroup>
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </SimProductPanel>
 
-      <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
-        <CardHeader className="flex-row items-center justify-between border-b border-border px-4 py-3">
-          <CardTitle className="text-sm font-medium text-primary">Workspace</CardTitle>
-          <Badge
-            variant="outline"
-            className={
-              linked
-                ? "gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                : "gap-1.5 border-border text-primary/55"
-            }
-          >
-            <Badge
-              className={
-                "size-1.5 rounded-full p-0 " + (linked ? "bg-emerald-500" : "bg-primary/30")
-              }
-              variant="default"
+      <SimProductPanel className="flex flex-col" id={CONNECTORS_SECTION_ID}>
+        <SimProductHeader
+          actions={
+            onOpenConnectors ? (
+              <button
+                className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                onClick={onOpenConnectors}
+                type="button"
+              >
+                All settings
+              </button>
+            ) : null
+          }
+          title="Connectors"
+        />
+        <div className="sources-connectors px-1 py-2">
+          <ConnectorSettings showHeading={false} />
+        </div>
+      </SimProductPanel>
+
+      <SimProductPanel>
+        <SimProductHeader
+          actions={
+            <SimBadge variant={linked ? "green" : "amber"}>
+              {linked ? "Linked" : "Local mode"}
+            </SimBadge>
+          }
+          title="Workspace"
+        />
+        <div className="divide-y divide-[var(--border)] text-sm">
+          <MetadataRow label="Mode" value={workspace.mode} />
+          <MetadataRow label="Status" value={workspace.status} />
+          <MetadataRow
+            label="Preflight"
+            value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
+          />
+          {workspace.outboundOrganizationId ? (
+            <MetadataRow label="Organization" mono value={workspace.outboundOrganizationId} />
+          ) : null}
+          {workspace.outboundWorkspaceId ? (
+            <MetadataRow
+              label="OutboundConsole workspace"
+              mono
+              value={workspace.outboundWorkspaceId}
             />
-            {linked ? "Linked" : "Local mode"}
-          </Badge>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ItemGroup className="text-sm">
-            <Row label="Mode" value={workspace.mode} />
-            <ItemSeparator />
-            <Row label="Status" value={workspace.status} />
-            <ItemSeparator />
-            <Row
-              label="Preflight"
-              value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
-            />
-            {workspace.outboundOrganizationId ? (
-              <>
-                <ItemSeparator />
-                <Row label="Organization" value={workspace.outboundOrganizationId} mono />
-              </>
-            ) : null}
-            {workspace.outboundWorkspaceId ? (
-              <>
-                <ItemSeparator />
-                <Row label="OutboundConsole workspace" value={workspace.outboundWorkspaceId} mono />
-              </>
-            ) : null}
-            {workspace.lastVerifiedAt ? (
-              <>
-                <ItemSeparator />
-                <Row label="Last verified" value={relativeTime(workspace.lastVerifiedAt)} />
-              </>
-            ) : null}
-          </ItemGroup>
-        </CardContent>
-      </Card>
+          ) : null}
+          {workspace.lastVerifiedAt ? (
+            <MetadataRow label="Last verified" value={relativeTime(workspace.lastVerifiedAt)} />
+          ) : null}
+        </div>
+      </SimProductPanel>
 
       {linked ? (
         <Alert>
@@ -267,64 +234,57 @@ export function WorkspaceView({
             </AlertDescription>
           </Alert>
 
-          <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
-            <CardHeader className="border-b border-border px-4 py-3">
-              <CardTitle className="text-sm font-medium text-primary">
-                Link a governed workspace
-              </CardTitle>
-              <CardDescription className="text-sm text-primary/60">
+          <SimProductPanel>
+            <SimProductHeader title="Link a governed workspace" />
+            <div className="flex flex-col gap-3 px-4 py-4">
+              <p className="text-sm text-[var(--text-secondary)]">
                 Connect an OutboundConsole workspace to turn on policy-checked sending.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-4 py-4">
-              <div className="flex flex-col gap-3">
-                <Field label="OutboundConsole workspace ID">
-                  <Input
-                    value={wsId}
-                    onChange={(e) => setWsId(e.target.value)}
-                    placeholder="ws_…"
-                  />
-                </Field>
-                <Field label="Organization ID (optional)">
-                  <Input
-                    value={orgId}
-                    onChange={(e) => setOrgId(e.target.value)}
-                    placeholder="org_…"
-                  />
-                </Field>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={submit} disabled={busy || !wsId.trim()}>
-                    {busy ? <Spinner /> : <LinkSimple />} Link workspace
-                  </Button>
-                  {onOpenConnectors ? (
-                    <Button variant="ghost" size="sm" onClick={onOpenConnectors}>
-                      Manage connectors
-                    </Button>
-                  ) : null}
-                </div>
+              </p>
+              <Field label="OutboundConsole workspace ID">
+                <Input
+                  onChange={(event) => setWsId(event.target.value)}
+                  placeholder="ws_…"
+                  value={wsId}
+                />
+              </Field>
+              <Field label="Organization ID (optional)">
+                <Input
+                  onChange={(event) => setOrgId(event.target.value)}
+                  placeholder="org_…"
+                  value={orgId}
+                />
+              </Field>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  disabled={linkBusy || !wsId.trim()}
+                  onClick={() => void submitLink()}
+                  size="sm"
+                >
+                  {linkBusy ? <Spinner /> : <LinkSimple />} Link workspace
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SimProductPanel>
         </>
       )}
     </div>
   );
 }
 
-// Health in the words a reader uses, and never silent about a source that has
-// stopped working.
 function SourceRow({
   source,
   autoRefreshBlocker,
   onError,
   onNotice,
+  onOpenConnectors,
   onUpdated,
 }: {
   source: RelationshipSourceStatus;
   autoRefreshBlocker: string;
   onError: (message: string) => void;
   onNotice: (message: string) => void;
-  onUpdated: (source: RelationshipSourceStatus) => void;
+  onOpenConnectors: () => void;
+  onUpdated: (source: RelationshipSourceStatus) => Promise<void>;
 }) {
   const [busy, setBusy] = React.useState(false);
   const stopped = source.status === "reconnect_required" || source.status === "disconnected";
@@ -352,7 +312,8 @@ function SourceRow({
     setBusy(true);
     onError("");
     try {
-      onUpdated(await resyncRelationshipSource(source.source, source.sourceAccountId));
+      const updated = await resyncRelationshipSource(source.source, source.sourceAccountId);
+      await onUpdated(updated);
       onNotice(`${source.source} sync queued.`);
     } catch (error) {
       onError(errMessage(error, "Could not retry the source sync."));
@@ -362,18 +323,26 @@ function SourceRow({
   };
 
   return (
-    <Item size="sm" className="flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
-      <ItemContent className="min-w-0">
-        <ItemTitle className="font-normal capitalize text-primary/80">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
+      <div className="min-w-0">
+        <div className="font-normal capitalize text-[var(--text-primary)]">
           {source.source}
           {source.sourceAccountId && source.sourceAccountId !== "default" ? (
-            <Badge variant="outline" className="ml-2 font-mono text-xs font-normal text-primary/45">
+            <Badge
+              className="ml-2 font-mono text-xs font-normal text-[var(--text-muted)]"
+              variant="outline"
+            >
               {source.sourceAccountId}
             </Badge>
           ) : null}
-        </ItemTitle>
+        </div>
         {stopped || stale || incomplete ? (
-          <ItemDescription className={stopped ? "text-destructive" : "text-amber-600"}>
+          <p
+            className={cn(
+              "mt-1 text-sm",
+              stopped ? "text-destructive" : "text-amber-600 dark:text-amber-400",
+            )}
+          >
             {stopped
               ? "This source has stopped reporting, so promises from it are not being read."
               : stale
@@ -383,48 +352,39 @@ function SourceRow({
                     ? "Automatic refresh is paused because Oppulence's AI provider is temporarily unavailable. The source is still connected; reconnecting will not fix it."
                     : "No successful update arrived within the expected cadence. Refresh to catch up."
                 : "The connection works, but its history is not fully synced."}
-          </ItemDescription>
+          </p>
         ) : null}
-      </ItemContent>
-      <ItemActions>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {stopped ? (
+          <Chip onClick={onOpenConnectors} type="button">
+            Reconnect
+          </Chip>
+        ) : null}
         {canResync ? (
-          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={retry}>
+          <Button
+            disabled={busy}
+            onClick={() => void retry()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
             {busy ? <Spinner /> : <ArrowClockwise />} {stale ? "Refresh now" : "Retry sync"}
           </Button>
         ) : null}
-        <Badge
-          variant="outline"
-          className={
-            stopped
-              ? "shrink-0 border-destructive/40 capitalize text-destructive"
-              : stale || incomplete
-                ? "shrink-0 border-amber-500/40 capitalize text-amber-600"
-                : "shrink-0 border-transparent capitalize text-primary/60"
-          }
-        >
-          {label}
-        </Badge>
-      </ItemActions>
-    </Item>
+        <SimBadge variant={stopped || stale || incomplete ? "amber" : "gray"}>{label}</SimBadge>
+      </div>
+    </div>
   );
 }
 
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function MetadataRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <Item size="sm" className="justify-between px-4 py-2.5">
-      <ItemContent className="flex-row items-center justify-between gap-4">
-        <Label className="font-normal text-primary/55">{label}</Label>
-        <Badge
-          className={
-            mono
-              ? "font-mono text-xs font-normal text-primary/70"
-              : "capitalize font-normal text-primary/80"
-          }
-          variant="secondary"
-        >
-          {value}
-        </Badge>
-      </ItemContent>
-    </Item>
+    <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+      <Label className="font-normal text-[var(--text-secondary)]">{label}</Label>
+      <span className={cn("text-[var(--text-primary)]", mono ? "font-mono text-xs" : "capitalize")}>
+        {value}
+      </span>
+    </div>
   );
 }
