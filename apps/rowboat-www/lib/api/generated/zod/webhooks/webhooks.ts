@@ -143,7 +143,7 @@ export const AppendConnectorConsentAudit500Response = zod
  */
 export const ConnectorConsentContextBody = zod
   .strictObject({
-    state: zod.string().describe("Opaque one-time OAuth state/session ticket."),
+    state: zod.string().describe("Opaque one-time OAuth state\/session ticket."),
   })
   .describe("Fetches consent context by opaque OAuth state.");
 

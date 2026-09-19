@@ -14,6 +14,7 @@ import type {
   ApproveRelationshipRecommendationBody,
   BetaDiagnostics,
   CommitmentDependency,
+  CommunicationTimelinePage,
   ConversationDeletionReceipt,
   CorrectConversationEvidence201,
   CorrectConversationEvidenceBody,
@@ -29,10 +30,13 @@ import type {
   ExportCommitment200One,
   ExportCommitmentParams,
   GetCommitmentEvents200,
+  GetCommunicationAttachmentContent200,
+  GetCommunicationInteractionBody200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
+  GetRelationshipCommunicationTimelineParams,
   GetRelationshipEvidence200,
   GetRelationshipGraphParams,
   GetRelationshipSourceInventory200,
@@ -296,29 +300,10 @@ export const respondPublicMutualActionPlan = async (
   respondPublicMutualActionPlanBody: RespondPublicMutualActionPlanBody,
   options?: RequestInit,
 ): Promise<respondPublicMutualActionPlanResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRespondPublicMutualActionPlanUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(respondPublicMutualActionPlanBody),
   });
 
@@ -440,29 +425,10 @@ export const decideRelationshipAttention = async (
   decideRelationshipAttentionBody: DecideRelationshipAttentionBody,
   options?: RequestInit,
 ): Promise<decideRelationshipAttentionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getDecideRelationshipAttentionUrl(attentionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(decideRelationshipAttentionBody),
   });
 
@@ -706,29 +672,10 @@ export const decideRelationshipIdentityCandidate = async (
   decideRelationshipIdentityCandidateBody: DecideRelationshipIdentityCandidateBody,
   options?: RequestInit,
 ): Promise<decideRelationshipIdentityCandidateResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getDecideRelationshipIdentityCandidateUrl(candidateId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(decideRelationshipIdentityCandidateBody),
   });
 
@@ -789,29 +736,10 @@ export const ingestRelationshipObservations = async (
   ingestRelationshipObservationsBody: IngestRelationshipObservationsBody,
   options?: RequestInit,
 ): Promise<ingestRelationshipObservationsResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getIngestRelationshipObservationsUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(ingestRelationshipObservationsBody),
   });
 
@@ -866,29 +794,10 @@ export const approveRelationshipRecommendation = async (
   approveRelationshipRecommendationBody?: ApproveRelationshipRecommendationBody,
   options?: RequestInit,
 ): Promise<approveRelationshipRecommendationResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getApproveRelationshipRecommendationUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(approveRelationshipRecommendationBody),
   });
 
@@ -950,29 +859,10 @@ export const rejectRelationshipRecommendation = async (
   rejectRelationshipRecommendationBody: RejectRelationshipRecommendationBody,
   options?: RequestInit,
 ): Promise<rejectRelationshipRecommendationResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRejectRelationshipRecommendationUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(rejectRelationshipRecommendationBody),
   });
 
@@ -1133,29 +1023,10 @@ export const reportRelationshipSourceAuthorization = async (
   reportRelationshipSourceAuthorizationBody: ReportRelationshipSourceAuthorizationBody,
   options?: RequestInit,
 ): Promise<reportRelationshipSourceAuthorizationResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getReportRelationshipSourceAuthorizationUrl(source), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(reportRelationshipSourceAuthorizationBody),
   });
 
@@ -1216,29 +1087,10 @@ export const resyncRelationshipSource = async (
   resyncRelationshipSourceBody: ResyncRelationshipSourceBody,
   options?: RequestInit,
 ): Promise<resyncRelationshipSourceResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getResyncRelationshipSourceUrl(source), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(resyncRelationshipSourceBody),
   });
 
@@ -1404,29 +1256,10 @@ export const createRelationship = async (
   createRelationshipBody: CreateRelationshipBody,
   options?: RequestInit,
 ): Promise<createRelationshipResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getCreateRelationshipUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(createRelationshipBody),
   });
 
@@ -1607,29 +1440,10 @@ export const acknowledgeMissionControl = async (
   acknowledgeMissionControlBody: AcknowledgeMissionControlBody,
   options?: RequestInit,
 ): Promise<acknowledgeMissionControlResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getAcknowledgeMissionControlUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(acknowledgeMissionControlBody),
   });
 
@@ -1694,29 +1508,10 @@ export const retractRelationshipAssertion = async (
   retractRelationshipAssertionBody: RetractRelationshipAssertionBody,
   options?: RequestInit,
 ): Promise<retractRelationshipAssertionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRetractRelationshipAssertionUrl(relationshipId, assertionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(retractRelationshipAssertionBody),
   });
 
@@ -1829,29 +1624,10 @@ export const createCommitmentDependency = async (
   createCommitmentDependencyBody: CreateCommitmentDependencyBody,
   options?: RequestInit,
 ): Promise<createCommitmentDependencyResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getCreateCommitmentDependencyUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(createCommitmentDependencyBody),
   });
 
@@ -1901,29 +1677,10 @@ export const runCommitmentRecovery = async (
   runCommitmentRecoveryBody?: RunCommitmentRecoveryBody,
   options?: RequestInit,
 ): Promise<runCommitmentRecoveryResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRunCommitmentRecoveryUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(runCommitmentRecoveryBody),
   });
 
@@ -2038,29 +1795,10 @@ export const appendCommitmentTransition = async (
   appendCommitmentTransitionBody: AppendCommitmentTransitionBody,
   options?: RequestInit,
 ): Promise<appendCommitmentTransitionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getAppendCommitmentTransitionUrl(relationshipId, commitmentId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(appendCommitmentTransitionBody),
   });
 
@@ -2068,6 +1806,78 @@ export const appendCommitmentTransition = async (
 
   const data: appendCommitmentTransitionResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as appendCommitmentTransitionResponse;
+};
+
+export type getRelationshipCommunicationTimelineResponse200 = {
+  data: CommunicationTimelinePage;
+  status: 200;
+};
+
+export type getRelationshipCommunicationTimelineResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getRelationshipCommunicationTimelineResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getRelationshipCommunicationTimelineResponseSuccess =
+  getRelationshipCommunicationTimelineResponse200 & {
+    headers: Headers;
+  };
+export type getRelationshipCommunicationTimelineResponseError = (
+  getRelationshipCommunicationTimelineResponse401 | getRelationshipCommunicationTimelineResponse404
+) & {
+  headers: Headers;
+};
+
+export type getRelationshipCommunicationTimelineResponse =
+  | getRelationshipCommunicationTimelineResponseSuccess
+  | getRelationshipCommunicationTimelineResponseError;
+
+export const getGetRelationshipCommunicationTimelineUrl = (
+  relationshipId: string,
+  params?: GetRelationshipCommunicationTimelineParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/relationships/${relationshipId}/communication-timeline?${stringifiedParams}`
+    : `/v1/relationships/${relationshipId}/communication-timeline`;
+};
+
+/**
+ * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+ * @summary Get communication timeline
+ */
+export const getRelationshipCommunicationTimeline = async (
+  relationshipId: string,
+  params?: GetRelationshipCommunicationTimelineParams,
+  options?: RequestInit,
+): Promise<getRelationshipCommunicationTimelineResponse> => {
+  const res = await fetch(getGetRelationshipCommunicationTimelineUrl(relationshipId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRelationshipCommunicationTimelineResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRelationshipCommunicationTimelineResponse;
 };
 
 export type resolveRelationshipContradictionResponse201 = {
@@ -2125,29 +1935,10 @@ export const resolveRelationshipContradiction = async (
   resolveRelationshipContradictionBody: ResolveRelationshipContradictionBody,
   options?: RequestInit,
 ): Promise<resolveRelationshipContradictionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getResolveRelationshipContradictionUrl(relationshipId, caseId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(resolveRelationshipContradictionBody),
   });
 
@@ -2208,29 +1999,10 @@ export const correctConversationEvidence = async (
   correctConversationEvidenceBody: CorrectConversationEvidenceBody,
   options?: RequestInit,
 ): Promise<correctConversationEvidenceResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getCorrectConversationEvidenceUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(correctConversationEvidenceBody),
   });
 
@@ -2293,29 +2065,10 @@ export const decideConversationChange = async (
   decideConversationChangeBody: DecideConversationChangeBody,
   options?: RequestInit,
 ): Promise<decideConversationChangeResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getDecideConversationChangeUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(decideConversationChangeBody),
   });
 
@@ -2378,29 +2131,10 @@ export const requestConversationDeletion = async (
   requestConversationDeletionBody: RequestConversationDeletionBody,
   options?: RequestInit,
 ): Promise<requestConversationDeletionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRequestConversationDeletionUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(requestConversationDeletionBody),
   });
 
@@ -2507,29 +2241,10 @@ export const putConversationPolicy = async (
   putConversationPolicyBody: PutConversationPolicyBody,
   options?: RequestInit,
 ): Promise<putConversationPolicyResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getPutConversationPolicyUrl(relationshipId), {
     ...options,
     method: "PUT",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(putConversationPolicyBody),
   });
 
@@ -2584,29 +2299,10 @@ export const correctRelationship = async (
   correctRelationshipBody: CorrectRelationshipBody,
   options?: RequestInit,
 ): Promise<correctRelationshipResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getCorrectRelationshipUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(correctRelationshipBody),
   });
 
@@ -2720,29 +2416,10 @@ export const createMutualActionPlan = async (
   createMutualActionPlanBody: CreateMutualActionPlanBody,
   options?: RequestInit,
 ): Promise<createMutualActionPlanResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getCreateMutualActionPlanUrl(relationshipId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(createMutualActionPlanBody),
   });
 
@@ -2806,29 +2483,10 @@ export const reviseMutualActionPlan = async (
   reviseMutualActionPlanBody: ReviseMutualActionPlanBody,
   options?: RequestInit,
 ): Promise<reviseMutualActionPlanResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getReviseMutualActionPlanUrl(relationshipId, planId), {
     ...options,
     method: "PUT",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(reviseMutualActionPlanBody),
   });
 
@@ -2886,29 +2544,10 @@ export const approveMutualActionPlan = async (
   approveMutualActionPlanBody?: ApproveMutualActionPlanBody,
   options?: RequestInit,
 ): Promise<approveMutualActionPlanResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getApproveMutualActionPlanUrl(relationshipId, planId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(approveMutualActionPlanBody),
   });
 
@@ -2966,29 +2605,10 @@ export const shareMutualActionPlan = async (
   shareMutualActionPlanBody?: ShareMutualActionPlanBody,
   options?: RequestInit,
 ): Promise<shareMutualActionPlanResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getShareMutualActionPlanUrl(relationshipId, planId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(shareMutualActionPlanBody),
   });
 
@@ -3062,4 +2682,128 @@ export const getRelationshipTimeline = async (
 
   const data: getRelationshipTimelineResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getRelationshipTimelineResponse;
+};
+
+export type getCommunicationAttachmentContentResponse200 = {
+  data: GetCommunicationAttachmentContent200;
+  status: 200;
+};
+
+export type getCommunicationAttachmentContentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getCommunicationAttachmentContentResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type getCommunicationAttachmentContentResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getCommunicationAttachmentContentResponseSuccess =
+  getCommunicationAttachmentContentResponse200 & {
+    headers: Headers;
+  };
+export type getCommunicationAttachmentContentResponseError = (
+  | getCommunicationAttachmentContentResponse401
+  | getCommunicationAttachmentContentResponse403
+  | getCommunicationAttachmentContentResponse404
+) & {
+  headers: Headers;
+};
+
+export type getCommunicationAttachmentContentResponse =
+  getCommunicationAttachmentContentResponseSuccess | getCommunicationAttachmentContentResponseError;
+
+export const getGetCommunicationAttachmentContentUrl = (attachmentId: string) => {
+  return `/v1/revenue-workspaces/current/communications/attachments/${attachmentId}/content`;
+};
+
+/**
+ * Returns one scanned text attachment when policy and grants allow it.
+ * @summary Get authorized attachment content
+ */
+export const getCommunicationAttachmentContent = async (
+  attachmentId: string,
+  options?: RequestInit,
+): Promise<getCommunicationAttachmentContentResponse> => {
+  const res = await fetch(getGetCommunicationAttachmentContentUrl(attachmentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCommunicationAttachmentContentResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCommunicationAttachmentContentResponse;
+};
+
+export type getCommunicationInteractionBodyResponse200 = {
+  data: GetCommunicationInteractionBody200;
+  status: 200;
+};
+
+export type getCommunicationInteractionBodyResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getCommunicationInteractionBodyResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type getCommunicationInteractionBodyResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getCommunicationInteractionBodyResponseSuccess =
+  getCommunicationInteractionBodyResponse200 & {
+    headers: Headers;
+  };
+export type getCommunicationInteractionBodyResponseError = (
+  | getCommunicationInteractionBodyResponse401
+  | getCommunicationInteractionBodyResponse403
+  | getCommunicationInteractionBodyResponse404
+) & {
+  headers: Headers;
+};
+
+export type getCommunicationInteractionBodyResponse =
+  getCommunicationInteractionBodyResponseSuccess | getCommunicationInteractionBodyResponseError;
+
+export const getGetCommunicationInteractionBodyUrl = (interactionId: string) => {
+  return `/v1/revenue-workspaces/current/communications/${interactionId}/body`;
+};
+
+/**
+ * Returns the plain-text body for one interaction when policy and grants allow it.
+ * @summary Get authorized communication body
+ */
+export const getCommunicationInteractionBody = async (
+  interactionId: string,
+  options?: RequestInit,
+): Promise<getCommunicationInteractionBodyResponse> => {
+  const res = await fetch(getGetCommunicationInteractionBodyUrl(interactionId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCommunicationInteractionBodyResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCommunicationInteractionBodyResponse;
 };

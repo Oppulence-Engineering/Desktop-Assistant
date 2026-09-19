@@ -2068,6 +2068,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationships/{relationshipId}/communication-timeline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get communication timeline
+     * @description Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+     */
+    get: operations["getRelationshipCommunicationTimeline"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
     parameters: {
       query?: never;
@@ -2692,6 +2712,46 @@ export interface paths {
      * @description Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
      */
     get: operations["getRevenueWorkspace"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get authorized attachment content
+     * @description Returns one scanned text attachment when policy and grants allow it.
+     */
+    get: operations["getCommunicationAttachmentContent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-workspaces/current/communications/{interactionId}/body": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get authorized communication body
+     * @description Returns the plain-text body for one interaction when policy and grants allow it.
+     */
+    get: operations["getCommunicationInteractionBody"];
     put?: never;
     post?: never;
     delete?: never;
@@ -5372,6 +5432,52 @@ export interface components {
         | "cancelled"
         | "superseded";
     };
+    /** @description Authorized communication fields for one actor. */
+    CommunicationAccess: {
+      /**
+       * @description Attachment visibility.
+       * @example false
+       */
+      attachments: boolean;
+      /**
+       * @description Body visibility.
+       * @example false
+       */
+      body: boolean;
+      /**
+       * @description Metadata visibility.
+       * @example true
+       */
+      metadata: boolean;
+      /**
+       * @description Policy version.
+       * @example 1
+       */
+      policyVersion?: number;
+      /**
+       * @description Protected recipient match.
+       * @example false
+       */
+      protected?: boolean;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /**
+       * @description Subject visibility.
+       * @example true
+       */
+      subject: boolean;
+    };
     CommunicationAttachment: {
       checksum?: string;
       /**
@@ -5625,6 +5731,82 @@ export interface components {
        */
       updated_at: string;
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description One redacted communication metadata row. */
+    CommunicationTimelineItem: {
+      access: components["schemas"]["CommunicationAccess"];
+      /**
+       * @description Attachment count.
+       * @example 1
+       */
+      attachmentCount?: number;
+      /**
+       * @description Whether the body remains locked.
+       * @example true
+       */
+      bodyLocked: boolean;
+      /**
+       * @description Direction.
+       * @example inbound
+       */
+      direction?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Interaction kind.
+       * @example email
+       * @enum {string}
+       */
+      interactionType: "email" | "meeting";
+      /**
+       * Format: date-time
+       * @description When it occurred.
+       * @example 2026-09-06T12:00:00Z
+       */
+      occurredAt: string;
+      /**
+       * Format: uuid
+       * @description Mailbox owner.
+       * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      ownerId: string;
+      /**
+       * @description Provider source.
+       * @example gmail
+       * @enum {string}
+       */
+      source: "gmail" | "calendar";
+      /**
+       * @description Redacted subject.
+       * @example Follow up
+       */
+      subject?: string;
+      /**
+       * @description Stored visibility.
+       * @example metadata
+       * @enum {string}
+       */
+      visibility: "private" | "metadata" | "full";
+    };
+    /** @description Paginated communication timeline. */
+    CommunicationTimelinePage: {
+      /**
+       * @description More pages exist.
+       * @example false
+       */
+      hasMore: boolean;
+      /** @description Timeline items. */
+      items: components["schemas"]["CommunicationTimelineItem"][];
+      /**
+       * Format: date-time
+       * @description Cursor for the next page.
+       * @example 2026-09-06T12:00:00Z
+       */
+      nextBefore?: string | null;
     };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
@@ -11386,6 +11568,11 @@ export interface components {
       /** @description Source-backed company categories. */
       categories: string[];
       /**
+       * @description Commitments currently recorded on this relationship.
+       * @example 4
+       */
+      commitmentCount?: number;
+      /**
        * @description Source-backed company description.
        * @example Builds AI infrastructure for customer operations.
        */
@@ -11409,6 +11596,11 @@ export interface components {
        * @example Jordan Buyer
        */
       displayName: string;
+      /**
+       * @description Observed email threads currently attached to this relationship.
+       * @example 12
+       */
+      emailThreadCount?: number;
       /**
        * @description Direction of engagement.
        * @example declining
@@ -11482,6 +11674,11 @@ export interface components {
        * @example 1
        */
       openActions?: number;
+      /**
+       * @description Active people currently attached to this relationship.
+       * @example 3
+       */
+      peopleCount?: number;
       /**
        * @description Primary email address.
        * @example buyer@example.com
@@ -18860,6 +19057,36 @@ export interface operations {
       409: components["responses"]["409"];
     };
   };
+  getRelationshipCommunicationTimeline: {
+    parameters: {
+      query?: {
+        /** @description Maximum items (1-100). */
+        limit?: number;
+        /** @description Return items before this RFC3339 timestamp. */
+        before?: string;
+      };
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Communication timeline. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommunicationTimelinePage"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
   resolveRelationshipContradiction: {
     parameters: {
       query?: never;
@@ -20517,6 +20744,87 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+    };
+  };
+  getCommunicationAttachmentContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Attachment id. */
+        attachmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authorized attachment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            access?: components["schemas"]["CommunicationAccess"];
+            /**
+             * @description UTF-8 content.
+             * @example Quarterly plan
+             */
+            content?: string;
+            /**
+             * @description Filename.
+             * @example notes.txt
+             */
+            filename?: string;
+            /**
+             * @description MIME type.
+             * @example text/plain
+             */
+            mimeType?: string;
+            /**
+             * @description Scan status.
+             * @example clean
+             */
+            scanStatus?: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+    };
+  };
+  getCommunicationInteractionBody: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Interaction id. */
+        interactionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authorized body. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            access?: components["schemas"]["CommunicationAccess"];
+            /**
+             * @description Plain-text body.
+             * @example Thanks for the update.
+             */
+            body?: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
     };
   };
   linkRevenueWorkspace: {

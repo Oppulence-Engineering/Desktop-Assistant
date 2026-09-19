@@ -911,7 +911,7 @@ export const GetRevenueActionAudit200Response = zod
             status: zod
               .enum(["passed", "review_required", "blocked"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             suppression: zod
               .record(zod.string(), zod.unknown())
@@ -1419,7 +1419,7 @@ export const EvaluateRevenueAction200Response = zod
     status: zod
       .enum(["passed", "review_required", "blocked"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     suppression: zod
       .record(zod.string(), zod.unknown())
@@ -2272,7 +2272,7 @@ export const GetRevenueImpact200Response = zod
     meetingRate: zod
       .number()
       .nullish()
-      .describe("Meeting rate = meetings / executed; null with no denominator."),
+      .describe("Meeting rate = meetings \/ executed; null with no denominator."),
     meetingsBooked: zod.int().optional().describe("Meetings booked."),
     open: zod.int().describe("Actions currently open."),
     outcomes: zod
@@ -2292,7 +2292,7 @@ export const GetRevenueImpact200Response = zod
     replyRate: zod
       .number()
       .nullish()
-      .describe("Reply rate = replied / executed; null with no denominator."),
+      .describe("Reply rate = replied \/ executed; null with no denominator."),
     riskReasons: zod
       .array(
         zod
@@ -2366,7 +2366,7 @@ export const ListRevenueLeakScans200Response = zod
             status: zod
               .enum(["pending", "running", "completed", "failed"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             threadsDeepRead: zod
               .int()
@@ -2453,7 +2453,7 @@ export const StartRevenueLeakScan202Response = zod
     status: zod
       .enum(["pending", "running", "completed", "failed"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     threadsDeepRead: zod
       .int()
@@ -2528,7 +2528,7 @@ export const GetRevenueLeakScan200Response = zod
     status: zod
       .enum(["pending", "running", "completed", "failed"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     threadsDeepRead: zod
       .int()
@@ -2734,7 +2734,7 @@ export const GetRevenueWorkspace200Response = zod
     status: zod
       .enum(["active", "disconnected", "repair_required"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
   })
   .describe(
@@ -2783,7 +2783,7 @@ export const LinkRevenueWorkspace200Response = zod
     status: zod
       .enum(["active", "disconnected", "repair_required"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
   })
   .describe(

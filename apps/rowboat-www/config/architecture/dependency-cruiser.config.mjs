@@ -31,8 +31,8 @@ const config = {
     },
   ],
   options: {
-    doNotFollow: { path: "node_modules" },
-    exclude: "(^|/)(?:node_modules|\\.next|coverage|lib/api/generated)(?:/|$)",
+    doNotFollow: { path: "(^|/)(?:node_modules|vendor|sim-port)(?:/|$)" },
+    exclude: "(^|/)(?:node_modules|\\.next|coverage|lib/api/generated|vendor|sim-port)(?:/|$)",
     tsConfig: { fileName: "tsconfig.json" },
     enhancedResolveOptions: { exportsFields: ["exports"] },
     reporterOptions: {

@@ -15,7 +15,7 @@ export const DeleteMeBody = zod
   .strictObject({
     confirm: zod.enum(["DELETE"]).describe("Must be the literal value DELETE."),
   })
-  .describe("Request body for DELETE /v1/me.");
+  .describe("Request body for DELETE \/v1\/me.");
 
 export const DeleteMe200Response = zod
   .strictObject({
@@ -30,7 +30,7 @@ export const DeleteMe200Response = zod
     workspacesDeleted: zod.int().describe("Workspaces deleted with the account."),
     workspacesTransferred: zod.int().describe("Shared workspaces given to another member."),
   })
-  .describe("Response for DELETE /v1/me. Holds no personal data.");
+  .describe("Response for DELETE \/v1\/me. Holds no personal data.");
 
 export const DeleteMe400Response = zod
   .strictObject({
@@ -123,7 +123,7 @@ export const GetMe200Response = zod
           .enum(["active", "trialing", "past_due", "canceled"])
           .nullable()
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         trialExpiresAt: zod
           .string()
@@ -166,7 +166,7 @@ export const GetMe200Response = zod
       })
       .describe("User that owns this row."),
   })
-  .describe("Response for GET /v1/me.");
+  .describe("Response for GET \/v1\/me.");
 
 export const GetMe401Response = zod
   .strictObject({

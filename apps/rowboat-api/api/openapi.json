@@ -3723,6 +3723,57 @@
         ],
         "description": "One cross-account register row with its reader-facing state and account."
       },
+      "CommunicationAccess": {
+        "description": "Authorized communication fields for one actor.",
+        "properties": {
+          "attachments": {
+            "description": "Attachment visibility.",
+            "example": false,
+            "type": "boolean"
+          },
+          "body": {
+            "description": "Body visibility.",
+            "example": false,
+            "type": "boolean"
+          },
+          "metadata": {
+            "description": "Metadata visibility.",
+            "example": true,
+            "type": "boolean"
+          },
+          "policyVersion": {
+            "description": "Policy version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "protected": {
+            "description": "Protected recipient match.",
+            "example": false,
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "subject": {
+            "description": "Subject visibility.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": ["metadata", "subject", "body", "attachments", "reason"],
+        "type": "object"
+      },
       "CommunicationAttachment": {
         "properties": {
           "checksum": {
@@ -4231,6 +4282,107 @@
           "workspace",
           "owner"
         ],
+        "type": "object"
+      },
+      "CommunicationTimelineItem": {
+        "description": "One redacted communication metadata row.",
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/CommunicationAccess"
+          },
+          "attachmentCount": {
+            "description": "Attachment count.",
+            "example": 1,
+            "type": "integer"
+          },
+          "bodyLocked": {
+            "description": "Whether the body remains locked.",
+            "example": true,
+            "type": "boolean"
+          },
+          "direction": {
+            "description": "Direction.",
+            "example": "inbound",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "interactionType": {
+            "description": "Interaction kind.",
+            "enum": ["email", "meeting"],
+            "example": "email",
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "When it occurred.",
+            "example": "2026-09-06T12:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "ownerId": {
+            "description": "Mailbox owner.",
+            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "description": "Provider source.",
+            "enum": ["gmail", "calendar"],
+            "example": "gmail",
+            "type": "string"
+          },
+          "subject": {
+            "description": "Redacted subject.",
+            "example": "Follow up",
+            "type": "string"
+          },
+          "visibility": {
+            "description": "Stored visibility.",
+            "enum": ["private", "metadata", "full"],
+            "example": "metadata",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "interactionType",
+          "occurredAt",
+          "visibility",
+          "ownerId",
+          "bodyLocked",
+          "access"
+        ],
+        "type": "object"
+      },
+      "CommunicationTimelinePage": {
+        "description": "Paginated communication timeline.",
+        "properties": {
+          "hasMore": {
+            "description": "More pages exist.",
+            "example": false,
+            "type": "boolean"
+          },
+          "items": {
+            "description": "Timeline items.",
+            "items": {
+              "$ref": "#/components/schemas/CommunicationTimelineItem"
+            },
+            "type": "array"
+          },
+          "nextBefore": {
+            "description": "Cursor for the next page.",
+            "example": "2026-09-06T12:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["items", "hasMore"],
         "type": "object"
       },
       "ConfigResponse": {
@@ -12998,6 +13150,11 @@
             },
             "type": "array"
           },
+          "commitmentCount": {
+            "description": "Commitments currently recorded on this relationship.",
+            "example": 4,
+            "type": "integer"
+          },
           "companyDescription": {
             "description": "Source-backed company description.",
             "example": "Builds AI infrastructure for customer operations.",
@@ -13024,6 +13181,11 @@
             "description": "Human display name.",
             "example": "Jordan Buyer",
             "type": "string"
+          },
+          "emailThreadCount": {
+            "description": "Observed email threads currently attached to this relationship.",
+            "example": 12,
+            "type": "integer"
           },
           "engagement": {
             "description": "Direction of engagement.",
@@ -13107,6 +13269,11 @@
           "openActions": {
             "description": "Open queue actions for this relationship.",
             "example": 1,
+            "type": "integer"
+          },
+          "peopleCount": {
+            "description": "Active people currently attached to this relationship.",
+            "example": 3,
             "type": "integer"
           },
           "primaryEmail": {
@@ -23883,6 +24050,68 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/relationships/{relationshipId}/communication-timeline": {
+      "get": {
+        "description": "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.",
+        "operationId": "getRelationshipCommunicationTimeline",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum items (1-100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Return items before this RFC3339 timestamp.",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunicationTimelinePage"
+                }
+              }
+            },
+            "description": "Communication timeline."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get communication timeline",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
       "post": {
         "description": "Records the user's selected evidence side as a top-authority correction without rewriting either source.",
@@ -26440,6 +26669,135 @@
         ],
         "summary": "Get current revenue workspace",
         "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
+      "get": {
+        "description": "Returns one scanned text attachment when policy and grants allow it.",
+        "operationId": "getCommunicationAttachmentContent",
+        "parameters": [
+          {
+            "description": "Attachment id.",
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Attachment result.",
+                  "properties": {
+                    "access": {
+                      "$ref": "#/components/schemas/CommunicationAccess"
+                    },
+                    "content": {
+                      "description": "UTF-8 content.",
+                      "example": "Quarterly plan",
+                      "type": "string"
+                    },
+                    "filename": {
+                      "description": "Filename.",
+                      "example": "notes.txt",
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "description": "MIME type.",
+                      "example": "text/plain",
+                      "type": "string"
+                    },
+                    "scanStatus": {
+                      "description": "Scan status.",
+                      "example": "clean",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authorized attachment."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get authorized attachment content",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/revenue-workspaces/current/communications/{interactionId}/body": {
+      "get": {
+        "description": "Returns the plain-text body for one interaction when policy and grants allow it.",
+        "operationId": "getCommunicationInteractionBody",
+        "parameters": [
+          {
+            "description": "Interaction id.",
+            "in": "path",
+            "name": "interactionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Body result.",
+                  "properties": {
+                    "access": {
+                      "$ref": "#/components/schemas/CommunicationAccess"
+                    },
+                    "body": {
+                      "description": "Plain-text body.",
+                      "example": "Thanks for the update.",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authorized body."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get authorized communication body",
+        "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/revenue-workspaces/link": {

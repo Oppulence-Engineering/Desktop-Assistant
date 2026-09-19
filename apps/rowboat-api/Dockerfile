@@ -27,29 +27,25 @@ WORKDIR /src/apps/rowboat-api
 ARG VERSION=dev
 ARG COMMIT=none
 ARG DATE=unknown
+# Docker Desktop VMs are often ~8GiB with every host CPU visible. Compiling the
+# generated Ent graph at full GOMAXPROCS OOMs (`compile: signal: killed`).
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOMAXPROCS=2 \
+    GOMEMLIMIT=2GiB \
+    GOFLAGS=-p=2
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath \
-    -ldflags="-s -w \
+    set -eu; \
+    ldflags="-s -w \
       -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Version=${VERSION} \
       -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Commit=${COMMIT} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}" \
-    -o /out/rowboat-api ./cmd/server && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath \
-    -ldflags="-s -w \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Version=${VERSION} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Commit=${COMMIT} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}" \
-    -o /out/rowboat-api-worker ./cmd/worker && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath \
-    -ldflags="-s -w \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Version=${VERSION} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Commit=${COMMIT} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}" \
-    -o /out/rowboat-api-scheduler ./cmd/scheduler && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" \
-    -o /out/rowboat-api-migrate ./cmd/migrate && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/devstack ./cmd/devstack
+      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}"; \
+    go build -trimpath -ldflags="$ldflags" -o /out/rowboat-api ./cmd/server; \
+    go build -trimpath -ldflags="$ldflags" -o /out/rowboat-api-worker ./cmd/worker; \
+    go build -trimpath -ldflags="$ldflags" -o /out/rowboat-api-scheduler ./cmd/scheduler; \
+    go build -trimpath -ldflags="-s -w" -o /out/rowboat-api-migrate ./cmd/migrate; \
+    go build -trimpath -o /out/devstack ./cmd/devstack
 
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /

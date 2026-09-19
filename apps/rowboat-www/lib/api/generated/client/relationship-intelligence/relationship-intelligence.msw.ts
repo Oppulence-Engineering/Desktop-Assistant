@@ -13,12 +13,15 @@ import type {
   ApproveMutualActionPlan200,
   BetaDiagnostics,
   CommitmentDependency,
+  CommunicationTimelinePage,
   ConversationDeletionReceipt,
   CorrectConversationEvidence201,
   CreateMutualActionPlan201,
   DecideConversationChange201,
   ExportCommitment200One,
   GetCommitmentEvents200,
+  GetCommunicationAttachmentContent200,
+  GetCommunicationInteractionBody200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
@@ -63,10 +66,13 @@ import {
   getDisconnectRelationshipSourceResponseMock,
   getExportCommitmentResponseMock,
   getGetCommitmentEventsResponseMock,
+  getGetCommunicationAttachmentContentResponseMock,
+  getGetCommunicationInteractionBodyResponseMock,
   getGetConversationPolicyResponseMock,
   getGetPublicMutualActionPlanResponseMock,
   getGetRelationshipBetaDiagnosticsResponseMock,
   getGetRelationshipChangesResponseMock,
+  getGetRelationshipCommunicationTimelineResponseMock,
   getGetRelationshipEvidenceResponseMock,
   getGetRelationshipGraphResponseMock,
   getGetRelationshipIdentityCandidateResponseMock,
@@ -122,6 +128,7 @@ export {
   getRunCommitmentRecoveryResponseMock,
   getGetCommitmentEventsResponseMock,
   getAppendCommitmentTransitionResponseMock,
+  getGetRelationshipCommunicationTimelineResponseMock,
   getResolveRelationshipContradictionResponseMock,
   getCorrectConversationEvidenceResponseMock,
   getDecideConversationChangeResponseMock,
@@ -135,6 +142,8 @@ export {
   getApproveMutualActionPlanResponseMock,
   getShareMutualActionPlanResponseMock,
   getGetRelationshipTimelineResponseMock,
+  getGetCommunicationAttachmentContentResponseMock,
+  getGetCommunicationInteractionBodyResponseMock,
 } from "./relationship-intelligence.faker";
 
 export const getListCommitmentsMockHandler = (
@@ -838,6 +847,30 @@ export const getAppendCommitmentTransitionMockHandler = (
   );
 };
 
+export const getGetRelationshipCommunicationTimelineMockHandler = (
+  overrideResponse?:
+    | CommunicationTimelinePage
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<CommunicationTimelinePage> | CommunicationTimelinePage),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/relationships/:relationshipId/communication-timeline",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetRelationshipCommunicationTimelineResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getResolveRelationshipContradictionMockHandler = (
   overrideResponse?:
     | ResolveRelationshipContradiction201
@@ -1149,6 +1182,54 @@ export const getGetRelationshipTimelineMockHandler = (
     options,
   );
 };
+
+export const getGetCommunicationAttachmentContentMockHandler = (
+  overrideResponse?:
+    | GetCommunicationAttachmentContent200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetCommunicationAttachmentContent200> | GetCommunicationAttachmentContent200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-workspaces/current/communications/attachments/:attachmentId/content",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetCommunicationAttachmentContentResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetCommunicationInteractionBodyMockHandler = (
+  overrideResponse?:
+    | GetCommunicationInteractionBody200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetCommunicationInteractionBody200> | GetCommunicationInteractionBody200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-workspaces/current/communications/:interactionId/body",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetCommunicationInteractionBodyResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getRelationshipIntelligenceMock = () => [
   getListCommitmentsMockHandler(),
   getExportCommitmentMockHandler(),
@@ -1179,6 +1260,7 @@ export const getRelationshipIntelligenceMock = () => [
   getRunCommitmentRecoveryMockHandler(),
   getGetCommitmentEventsMockHandler(),
   getAppendCommitmentTransitionMockHandler(),
+  getGetRelationshipCommunicationTimelineMockHandler(),
   getResolveRelationshipContradictionMockHandler(),
   getCorrectConversationEvidenceMockHandler(),
   getDecideConversationChangeMockHandler(),
@@ -1192,4 +1274,6 @@ export const getRelationshipIntelligenceMock = () => [
   getApproveMutualActionPlanMockHandler(),
   getShareMutualActionPlanMockHandler(),
   getGetRelationshipTimelineMockHandler(),
+  getGetCommunicationAttachmentContentMockHandler(),
+  getGetCommunicationInteractionBodyMockHandler(),
 ];
