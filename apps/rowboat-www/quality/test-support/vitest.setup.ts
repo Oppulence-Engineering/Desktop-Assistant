@@ -7,6 +7,13 @@ globalThis.React = React;
 
 // next/image relies on Next's runtime loader. Component tests only need the
 // resulting accessible image contract, so render a native image deterministically.
+// Next 16 cache helpers only run inside the App Router. Unit tests call the
+// same modules, so treat cacheLife/cacheTag as no-ops instead of throwing.
+vi.mock("next/cache", () => ({
+  cacheLife: () => undefined,
+  cacheTag: () => undefined,
+}));
+
 vi.mock("next/image", () => ({
   default: (
     props: Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {

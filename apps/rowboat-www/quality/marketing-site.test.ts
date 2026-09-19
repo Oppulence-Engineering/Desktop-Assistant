@@ -219,7 +219,7 @@ describe("public marketing information architecture", () => {
         new URL("../app/(marketing)/sim-landing/hero-platform-loop.tsx", import.meta.url),
         "utf8",
       ),
-    ).toContain("mode='native'");
+    ).toContain("HeroLoopShell");
     expect(
       readFileSync(
         new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
