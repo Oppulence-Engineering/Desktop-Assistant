@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cacheLife } from "next/cache";
 
 import { homepageFaqs } from "./catalog";
 import { SimLandingPage } from "./sim-landing/landing-page";
@@ -35,8 +36,6 @@ export const viewport: Viewport = {
   ],
 };
 
-export const instant = false;
-
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -62,7 +61,10 @@ const jsonLd = {
   ],
 };
 
-export default function Page() {
+export default async function Page() {
+  "use cache";
+  cacheLife("days");
+
   return (
     <>
       <script

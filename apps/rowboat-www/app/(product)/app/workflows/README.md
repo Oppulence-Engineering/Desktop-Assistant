@@ -2,7 +2,7 @@
 
 **Goal:** Scheduled and on-demand cloud workflow runs.
 
-**Client:** `components/workflows/cloud-workflows-view.tsx`, visual builder for schedules.
+**Client:** `components/features/workflows/cloud-workflows-view/cloud-workflows-view.tsx`, visual builder for schedules.
 
 **BFF:** `/api/rowboat/v1/background-tasks`, `/api/rowboat/v1/background-task-runs`.
 

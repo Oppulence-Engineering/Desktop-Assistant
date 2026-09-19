@@ -11,7 +11,7 @@ import type {
   RelationshipSourceInventoryItem,
   RelationshipSourceStatus,
   RevenueLeakScan,
-} from "@/types/revenue";
+} from "@/lib/revenue/types";
 
 const mocks = vi.hoisted(() => ({
   getWorkspace: vi.fn(),
@@ -24,26 +24,50 @@ const mocks = vi.hoisted(() => ({
   getScan: vi.fn(),
 }));
 
-vi.mock("@/lib/revenue", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/revenue")>()),
+vi.mock("@/lib/revenue/revenue", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/revenue/revenue")>()),
   ...mocks,
 }));
-vi.mock("@/lib/analytics", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/analytics")>()),
+vi.mock("@/hooks/queries/utils/fetch-relationship-sources", () => ({
+  fetchRelationshipSourceStatuses: mocks.listRelationshipSourceStatuses,
+  loadRelationshipSourceStatuses: mocks.listRelationshipSourceStatuses,
+  fetchRelationshipSources: mocks.listRelationshipSources,
+  loadRelationshipSources: mocks.listRelationshipSources,
+}));
+vi.mock("@/hooks/queries/utils/fetch-report", () => ({
+  fetchReportScans: mocks.listScans,
+  fetchReportScan: mocks.getScan,
+  fetchOpenPromisesReport: vi.fn(),
+  loadReportScans: mocks.listScans,
+  loadReportScan: mocks.getScan,
+  loadOpenPromisesReport: vi.fn(),
+}));
+vi.mock("@/hooks/queries/utils/fetch-workspace", () => ({
+  fetchWorkspace: mocks.getWorkspace,
+  loadWorkspace: mocks.getWorkspace,
+}));
+vi.mock("@/hooks/queries/utils/fetch-commitments", () => ({
+  fetchCommitments: mocks.listCommitments,
+  loadCommitments: mocks.listCommitments,
+}));
+vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/analytics/analytics")>()),
   capture: vi.fn(),
 }));
 
 // These views are not under test and pull in editors and a graph that import
 // CSS, which Vitest cannot load.
-vi.mock("@/components/revenue/relationships-view", () => ({ RelationshipsView: () => null }));
+vi.mock("@/components/features/revenue/relationships-view/relationships-view", () => ({
+  RelationshipsView: () => null,
+}));
 vi.mock("@/components/features/revenue/workspace-records/workspace-records-view", () => ({
   NotesView: () => null,
   PeopleView: () => null,
   TasksView: () => null,
 }));
-vi.mock("@/components/revenue/queue-view", () => ({ QueueView: () => null }));
+vi.mock("@/components/features/revenue/queue-view/queue-view", () => ({ QueueView: () => null }));
 
-import { RevenuePanel } from "@/components/revenue-panel";
+import { RevenuePanel } from "@/components/features/revenue/revenue-panel/revenue-panel";
 
 function googleStatus(status: string): RelationshipSourceStatus {
   const row: RelationshipSourceStatus = {

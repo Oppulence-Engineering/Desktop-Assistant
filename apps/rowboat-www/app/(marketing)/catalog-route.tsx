@@ -1,4 +1,6 @@
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import type { CapabilityPage } from "./catalog";
 import { allCapabilityPages, getCapabilityPage } from "./catalog";
@@ -25,8 +27,45 @@ export function catalogMetadata(kind: CapabilityPage["kind"], slug: string) {
   });
 }
 
-export function CatalogSlugPage({ kind, slug }: { kind: CapabilityPage["kind"]; slug: string }) {
+export async function CatalogSlugPage({
+  kind,
+  slug,
+}: {
+  kind: CapabilityPage["kind"];
+  slug: string;
+}) {
+  "use cache";
+  cacheLife("days");
   const page = getCapabilityPage(kind, slug);
   if (!page) notFound();
   return <CapabilityTemplate page={page} />;
+}
+
+/**
+ * Keep `params` out of the page default export so the marketing App Shell
+ * stays prefetchable. The cached renderer only sees a resolved slug.
+ */
+export function CatalogSlugRoute({
+  kind,
+  params,
+}: {
+  kind: CapabilityPage["kind"];
+  params: Promise<{ slug: string }>;
+}) {
+  return (
+    <Suspense fallback={null}>
+      <CatalogSlugFromParams kind={kind} params={params} />
+    </Suspense>
+  );
+}
+
+async function CatalogSlugFromParams({
+  kind,
+  params,
+}: {
+  kind: CapabilityPage["kind"];
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return <CatalogSlugPage kind={kind} slug={slug} />;
 }

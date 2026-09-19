@@ -73,6 +73,7 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.stories.tsx",
-    "stories"
+    "stories",
+    "vitest.config.ts"
   ]
 }

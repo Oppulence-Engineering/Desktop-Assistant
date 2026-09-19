@@ -84,7 +84,9 @@ export function WebMenuPreview({ layout = "menu" }: WebMenuPreviewProps) {
                     {account.health}
                   </Badge>
                 </td>
-                <td className="border-[var(--border)] border-r px-2.5 tabular-nums">{account.value}</td>
+                <td className="border-[var(--border)] border-r px-2.5 tabular-nums">
+                  {account.value}
+                </td>
                 <td className="px-2.5 text-[var(--text-secondary)]">{account.signal}</td>
               </tr>
             ))}

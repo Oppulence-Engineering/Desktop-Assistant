@@ -46,7 +46,7 @@ import type {
   VisualWorkflowDefinition,
   WorkflowActionKind,
   WorkflowTriggerKind,
-} from "@/lib/cloud-workflows";
+} from "@/lib/workflows/cloud-workflows";
 
 type Option = { value: string; label: string };
 type StepField = {

@@ -3,9 +3,9 @@
 **Goal:** Connections, appearance, account, and supported product preferences.
 
 **URL state:** `?settings=` deep-links settings panels. Legacy `extensions`,
-`models`, and `environment` values are normalized by `lib/product-navigation.ts`.
+`models`, and `environment` values are normalized by `lib/dashboard/product-navigation.ts`.
 
-**Client:** `components/app-settings.tsx`.
+**Client:** `components/features/settings/app-settings/app-settings.tsx`.
 
 **BFF:** `/api/rowboat/v1/connectors`, `/api/rowboat/v1/me`, connector OAuth start/claim via BFF.
 

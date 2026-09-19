@@ -49,7 +49,7 @@ function isConnector(value: unknown): value is Connector {
   );
 }
 
-const ConnectorsResponseSchema = z.object({
+export const ConnectorsResponseSchema = z.object({
   connectors: z.array(z.custom<Connector>(isConnector, "Invalid connector contract")),
 }) satisfies z.ZodType<ConnectorsResponse>;
 

@@ -1,7 +1,12 @@
-import { constants } from "node:fs";
-import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { componentInputSchema } from "@/config/generate/input-schemas";
+
+import { generate, runGenerate } from "./generate";
+import { buildPlan } from "./generate/plan";
+import { toAbsolute } from "./generate/paths";
+import { materialize } from "./generate/render";
 
 export type ComponentKind = "feature" | "route";
 
@@ -21,115 +26,32 @@ export type GeneratedComponentFile = {
 };
 
 const appRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const segmentPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
-const routePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*)*$/;
 
-function pascalCase(value: string): string {
-  return value
-    .split("-")
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-    .join("");
-}
-
-function validate(options: ComponentGeneratorOptions): void {
-  if (!segmentPattern.test(options.name)) {
-    throw new Error("Component name must be kebab-case, for example `agent-card`");
-  }
-  if (options.kind === "feature" && (!options.domain || !segmentPattern.test(options.domain))) {
-    throw new Error("Feature components require a kebab-case --domain");
-  }
-  if (options.kind === "route" && (!options.route || !routePattern.test(options.route))) {
-    throw new Error("Route components require a safe kebab-case --route path");
-  }
-}
-
-function componentSource(name: string, client: boolean): string {
-  const componentName = pascalCase(name);
-  const boundary = client ? '"use client";\n\nimport "client-only";\n\n' : "";
-  return `${boundary}import type { ComponentPropsWithoutRef } from "react";
-
-import { cn } from "@oppulence/ui/lib/utils";
-
-export type ${componentName}Props = ComponentPropsWithoutRef<"section">;
-
-export function ${componentName}({ className, ...props }: ${componentName}Props) {
-  return <section data-slot="${name}" className={cn(className)} {...props} />;
-}
-`;
-}
-
-function testSource(name: string): string {
-  const componentName = pascalCase(name);
-  return `// @vitest-environment jsdom
-
-import "@testing-library/jest-dom/vitest";
-
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-
-import { ${componentName} } from "./${name}";
-
-describe("${componentName}", () => {
-  it("forwards accessible section props and renders its content", () => {
-    render(<${componentName} aria-label="Example ${name}">Content</${componentName}>);
-
-    const component = screen.getByRole("region", { name: "Example ${name}" });
-    expect(component).toHaveAttribute("data-slot", "${name}");
-    expect(component).toHaveTextContent("Content");
+function toRequest(options: ComponentGeneratorOptions) {
+  return componentInputSchema.parse({
+    kind: "component",
+    ownership: options.kind,
+    name: options.name,
+    domain: options.domain,
+    route: options.route,
+    client: options.client,
+    dryRun: options.dryRun,
+    root: options.root,
   });
-});
-`;
 }
 
 export function buildComponentPlan(options: ComponentGeneratorOptions): GeneratedComponentFile[] {
-  validate(options);
   const root = options.root ?? appRoot;
-  let directory: string;
-  if (options.kind === "feature") {
-    if (!options.domain) throw new Error("Feature components require a kebab-case --domain");
-    directory = path.join(root, "components/features", options.domain, options.name);
-  } else {
-    if (!options.route) throw new Error("Route components require a safe kebab-case --route path");
-    directory = path.join(root, "app/(product)/app", options.route, "_components", options.name);
-  }
-
-  return [
-    {
-      path: path.join(directory, `${options.name}.tsx`),
-      content: componentSource(options.name, Boolean(options.client)),
-    },
-    { path: path.join(directory, `${options.name}.test.tsx`), content: testSource(options.name) },
-  ];
-}
-
-async function exists(filename: string): Promise<boolean> {
-  try {
-    await access(filename, constants.F_OK);
-    return true;
-  } catch {
-    return false;
-  }
+  return materialize(buildPlan(toRequest(options))).map((file) => ({
+    path: toAbsolute(root, file.path),
+    content: file.content,
+  }));
 }
 
 export async function generateComponent(
   options: ComponentGeneratorOptions,
 ): Promise<GeneratedComponentFile[]> {
-  const files = buildComponentPlan(options);
-  const conflicts = (
-    await Promise.all(files.map(async (file) => ((await exists(file.path)) ? file.path : null)))
-  ).filter((filename): filename is string => filename !== null);
-  if (conflicts.length > 0) {
-    throw new Error(`Refusing to overwrite existing files:\n${conflicts.join("\n")}`);
-  }
-  if (options.dryRun) return files;
-
-  const firstFile = files.at(0);
-  if (!firstFile) throw new Error("Component generator produced no files");
-  await mkdir(path.dirname(firstFile.path), { recursive: true });
-  await Promise.all(
-    files.map((file) => writeFile(file.path, file.content, { encoding: "utf8", flag: "wx" })),
-  );
-  return files;
+  return generate(toRequest(options));
 }
 
 function argumentValue(args: string[], index: number, flag: string): string {
@@ -145,8 +67,9 @@ export function parseComponentArguments(args: string[]): ComponentGeneratorOptio
     switch (argument) {
       case "--kind": {
         const kind = argumentValue(args, index, argument);
-        if (kind !== "feature" && kind !== "route")
+        if (kind !== "feature" && kind !== "route") {
           throw new Error("--kind must be feature or route");
+        }
         options.kind = kind;
         index += 1;
         break;
@@ -175,18 +98,38 @@ export function parseComponentArguments(args: string[]): ComponentGeneratorOptio
   }
   const { kind, name } = options;
   if (!kind || !name) throw new Error("--kind and --name are required");
-  const parsed = { ...options, kind, name };
-  validate(parsed);
-  return parsed;
+  if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(name)) {
+    throw new Error("Component name must be kebab-case, for example `agent-card`");
+  }
+  if (
+    kind === "feature" &&
+    (!options.domain || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(options.domain))
+  ) {
+    throw new Error("Feature components require a kebab-case --domain");
+  }
+  if (
+    kind === "route" &&
+    (!options.route ||
+      !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*)*$/.test(options.route))
+  ) {
+    throw new Error("Route components require a safe kebab-case --route path");
+  }
+  return { ...options, kind, name };
 }
 
 async function main(): Promise<void> {
   const options = parseComponentArguments(process.argv.slice(2));
-  const files = await generateComponent(options);
-  for (const file of files)
-    console.log(
-      `${options.dryRun ? "would create" : "created"}: ${path.relative(appRoot, file.path)}`,
-    );
+  await runGenerate([
+    "component",
+    "--kind",
+    options.kind,
+    "--name",
+    options.name,
+    ...(options.domain ? ["--domain", options.domain] : []),
+    ...(options.route ? ["--route", options.route] : []),
+    ...(options.client ? ["--client"] : []),
+    ...(options.dryRun ? ["--dry-run"] : []),
+  ]);
 }
 
 const entrypoint = process.argv[1];

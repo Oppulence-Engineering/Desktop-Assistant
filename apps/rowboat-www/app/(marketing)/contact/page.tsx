@@ -1,3 +1,5 @@
+import { cacheLife } from "next/cache";
+
 import { SimContactPage } from "../sim-landing/subpages/sim-contact-page";
 import { marketingMetadata } from "../metadata";
 
@@ -8,6 +10,8 @@ export const metadata = marketingMetadata({
   path: "/contact",
 });
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  "use cache";
+  cacheLife("days");
   return <SimContactPage />;
 }

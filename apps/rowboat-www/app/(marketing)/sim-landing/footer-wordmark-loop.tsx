@@ -209,7 +209,12 @@ type AnimKey = keyof typeof TRACKS;
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
-function cubicBezier(p1x: number, p1y: number, p2x: number, p2y: number): (progress: number) => number {
+function cubicBezier(
+  p1x: number,
+  p1y: number,
+  p2x: number,
+  p2y: number,
+): (progress: number) => number {
   const cx = 3 * p1x;
   const bx = 3 * (p2x - p1x) - cx;
   const ax = 1 - cx - bx;
@@ -496,7 +501,12 @@ export function FooterWordmarkLoop({ className }: { className?: string }) {
           </clipPath>
         </defs>
 
-        <g fill={`url(#${inkId})`} filter={`url(#${gooId})`} stroke={`url(#${inkId})`} strokeWidth={0}>
+        <g
+          fill={`url(#${inkId})`}
+          filter={`url(#${gooId})`}
+          stroke={`url(#${inkId})`}
+          strokeWidth={0}
+        >
           <g clipPath={`url(#${clipId})`} data-stage="metaballs" opacity={0}>
             <circle cx="22" cy="50" data-anim="metaballsA" r="16" />
             <circle cx="78" cy="50" data-anim="metaballsB" r="16" />
@@ -530,16 +540,8 @@ export function FooterWordmarkLoop({ className }: { className?: string }) {
             <circle cx="50" cy="50" data-anim="burstRight" r="12.5" />
           </g>
           <g clipPath={`url(#${clipId})`} data-stage="squeeze" opacity={0}>
-            <path
-              d="M 21.36 37.5 A 31.25 31.25 0 0 1 78.64 37.5"
-              fill="none"
-              strokeWidth="12.5"
-            />
-            <path
-              d="M 21.36 62.5 A 31.25 31.25 0 0 0 78.64 62.5"
-              fill="none"
-              strokeWidth="12.5"
-            />
+            <path d="M 21.36 37.5 A 31.25 31.25 0 0 1 78.64 37.5" fill="none" strokeWidth="12.5" />
+            <path d="M 21.36 62.5 A 31.25 31.25 0 0 0 78.64 62.5" fill="none" strokeWidth="12.5" />
             <rect data-anim="squeezeBarL" height="25" width="12.5" x="15" y="37.5" />
             <rect data-anim="squeezeBarR" height="25" width="12.5" x="72.5" y="37.5" />
           </g>

@@ -20,7 +20,7 @@ export const CreateChatCompletionHeader = zod.object({
   "x-solomon-use-case": zod
     .string()
     .optional()
-    .describe("Optional feature\/use-case label recorded in LLMUsage for cost allocation."),
+    .describe("Optional feature/use-case label recorded in LLMUsage for cost allocation."),
   "x-solomon-sub-use-case": zod
     .string()
     .optional()
@@ -81,7 +81,7 @@ export const CreateChatCompletionBody = zod
 export const CreateChatCompletion200Response = zod
   .record(zod.string(), zod.unknown())
   .describe(
-    "OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text\/event-stream chunks.",
+    "OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text/event-stream chunks.",
   );
 
 export const CreateChatCompletion400Response = zod
@@ -172,7 +172,7 @@ export const CreateCompletionHeader = zod.object({
   "x-solomon-use-case": zod
     .string()
     .optional()
-    .describe("Optional feature\/use-case label recorded in LLMUsage for cost allocation."),
+    .describe("Optional feature/use-case label recorded in LLMUsage for cost allocation."),
   "x-solomon-sub-use-case": zod
     .string()
     .optional()
@@ -199,7 +199,7 @@ export const CreateCompletionBody = zod
 export const CreateCompletion200Response = zod
   .record(zod.string(), zod.unknown())
   .describe(
-    "OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text\/event-stream chunks.",
+    "OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text/event-stream chunks.",
   );
 
 export const CreateCompletion400Response = zod
@@ -290,7 +290,7 @@ export const CreateEmbeddingHeader = zod.object({
   "x-solomon-use-case": zod
     .string()
     .optional()
-    .describe("Optional feature\/use-case label recorded in LLMUsage for cost allocation."),
+    .describe("Optional feature/use-case label recorded in LLMUsage for cost allocation."),
   "x-solomon-sub-use-case": zod
     .string()
     .optional()
@@ -319,7 +319,7 @@ export const CreateEmbeddingBody = zod
 export const CreateEmbedding200Response = zod
   .record(zod.string(), zod.unknown())
   .describe(
-    "OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text\/event-stream chunks.",
+    "OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text/event-stream chunks.",
   );
 
 export const CreateEmbedding400Response = zod

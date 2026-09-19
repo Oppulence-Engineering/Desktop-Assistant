@@ -1,0 +1,15 @@
+import { {{schemaName}}, type {{typeName}} } from "./{{name}}.schema";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * {{functionName}} is a server-safe {{domain}} helper.
+ * {{summary}}
+ *
+ * This module does not import React or fetch. Inputs are Zod-validated.
+ * Owned by `{{name}}.lit.ts`.
+ */
+export function {{functionName}}(input: {{typeName}}): string {
+  const value = {{schemaName}}.parse(input);
+  /* implementation */
+  return JSON.stringify(value);
+}

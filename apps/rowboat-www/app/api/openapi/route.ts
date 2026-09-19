@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { OpenAPIDocumentSchema } from "@/lib/api/routes/schemas/openapi";
 import { isRecord, streamUpstreamResponse } from "@/lib/bff/upstream-response";
-import { publicRowboatApiBaseURL, publicRowboatApiURL } from "@/lib/rowboat-public-api";
+import { publicRowboatApiBaseURL, publicRowboatApiURL } from "@/lib/api/rowboat-public-api";
 
 const ROWBOAT_API_DESCRIPTION =
   "Rowboat's API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, Composio proxying, internal webhooks, and admin GraphQL. The documented paths below are the routes mounted by cmd/server/wire.go.";

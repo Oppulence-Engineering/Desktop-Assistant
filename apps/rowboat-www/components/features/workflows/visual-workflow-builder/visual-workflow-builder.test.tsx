@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { compileVisualWorkflow } from "@/lib/cloud-workflows";
+import { compileVisualWorkflow } from "@/lib/workflows/cloud-workflows";
 import { VisualWorkflowBuilder } from "./visual-workflow-builder";
 
 vi.mock("@xyflow/react", () => ({

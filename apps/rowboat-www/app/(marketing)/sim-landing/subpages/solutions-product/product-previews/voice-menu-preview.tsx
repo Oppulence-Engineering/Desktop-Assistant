@@ -17,7 +17,9 @@ const HOTKEYS = [
   { label: "Translate paste", combo: "⌥ ⇧ T" },
 ] as const;
 
-const WAVEFORM = [3, 8, 14, 22, 18, 26, 12, 20, 9, 16, 24, 11, 19, 7, 15, 21, 10, 17, 13, 23] as const;
+const WAVEFORM = [
+  3, 8, 14, 22, 18, 26, 12, 20, 9, 16, 24, 11, 19, 7, 15, 21, 10, 17, 13, 23,
+] as const;
 
 /** Voice capture panel — waveform, hotkeys, and local-only badge. */
 export function VoiceMenuPreview({ layout = "menu" }: VoiceMenuPreviewProps) {

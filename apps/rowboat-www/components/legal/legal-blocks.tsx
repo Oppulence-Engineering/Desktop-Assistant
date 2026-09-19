@@ -15,9 +15,7 @@ export function LegalBlockContent({
   calloutClassName?: string;
 }) {
   if (typeof block === "string") {
-    return (
-      <p className="text-[15px] text-[var(--text-body)] leading-[1.65]">{block}</p>
-    );
+    return <p className="text-[15px] text-[var(--text-body)] leading-[1.65]">{block}</p>;
   }
 
   if (!Array.isArray(block)) {

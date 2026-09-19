@@ -32,7 +32,8 @@ export function SimFeatureMirrorPage({
 }) {
   const capabilitySections = details.capabilities ?? details.sections;
   const relatedPages =
-    details.relatedPages ?? featureLinks.filter((item) => item.href !== `/${page.path}`).slice(0, 3);
+    details.relatedPages ??
+    featureLinks.filter((item) => item.href !== `/${page.path}`).slice(0, 3);
 
   return (
     <>
@@ -115,7 +116,10 @@ export function SimFeatureMirrorPage({
                 </h2>
                 <div className="grid gap-4 md:grid-cols-3">
                   {page.bullets.slice(0, 3).map((bullet, index) => (
-                    <article className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")} key={bullet}>
+                    <article
+                      className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")}
+                      key={bullet}
+                    >
                       <p className="text-[12px] text-[var(--text-muted)] tabular-nums">
                         {String(index + 1).padStart(2, "0")}
                       </p>
@@ -136,7 +140,10 @@ export function SimFeatureMirrorPage({
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {capabilitySections.map((section) => (
-                    <article className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")} key={section.title}>
+                    <article
+                      className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")}
+                      key={section.title}
+                    >
                       <h3 className="text-[16px] text-[var(--text-primary)]">{section.title}</h3>
                       <p className="text-[14px] text-[var(--text-secondary)] leading-[1.5]">
                         {section.body}
@@ -157,7 +164,10 @@ export function SimFeatureMirrorPage({
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {details.useCases.map((useCase) => (
-                    <article className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")} key={useCase.title}>
+                    <article
+                      className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")}
+                      key={useCase.title}
+                    >
                       <h3 className="text-[16px] text-[var(--text-primary)]">{useCase.title}</h3>
                       <p className="text-[14px] text-[var(--text-secondary)] leading-[1.5]">
                         {useCase.body}

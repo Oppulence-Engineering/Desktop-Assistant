@@ -10,8 +10,11 @@
     "analyze": "ANALYZE=true next build",
     "arch": "depcruise app components hooks lib ../../packages/ui/src --config config/architecture/dependency-cruiser.config.mjs --output-type err-long",
     "bundle:check": "node scripts/check-bundle-budget.mjs",
-    "component:new": "tsx scripts/generate-component.ts",
+    "gen": "tsx scripts/generate.ts",
+    "gen:check": "vitest run quality/generate-policies.test.ts quality/generate-drift.test.ts quality/generate-kinds.test.ts quality/generate-orval.test.ts quality/generate-component.test.ts",
+    "component:new": "tsx scripts/generate.ts component",
     "contracts:check": "node scripts/check-generated-contracts.mjs",
+    "queries:check": "node scripts/check-react-query-patterns.mjs && node scripts/check-client-boundary-imports.mjs",
     "contracts:generate": "orval --config config/contracts/orval.config.ts",
     "format": "prettier --write . ../../packages/eslint-plugin-oppulence-web",
     "format:check": "prettier --check . ../../packages/eslint-plugin-oppulence-web",
@@ -100,6 +103,7 @@
     "nanoid": "^5.1.6",
     "next": "^16.3.3",
     "next-themes": "^0.4.6",
+    "nuqs": "^2.10.1",
     "platejs": "^53.3.11",
     "posthog-js": "^1.407.2",
     "prismjs": "^1.30.0",
@@ -123,7 +127,8 @@
     "use-stick-to-bottom": "^1.1.1",
     "v0-sdk": "^0.15.3",
     "vaul": "^1.1.2",
-    "zod": "^4.1.13"
+    "zod": "^4.1.13",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -153,11 +158,13 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "handlebars": "4.7.9",
     "jsdom": "30.0.1",
     "knip": "^6.32.2",
     "lighthouse": "^13.4.1",
     "msw": "^2.15.0",
     "orval": "^8.24.0",
+    "plop": "^4.0.4",
     "prettier": "^3.9.6",
     "react-scan": "^0.5.7",
     "shadcn": "^4.21.0",
@@ -177,7 +184,14 @@
     "undici": "6.28.0",
     "hono": "4.13.5",
     "js-yaml": "4.3.2",
+    "handlebars": "4.7.9",
     "uuid": "11.1.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "handlebars": "4.7.9",
+      "uuid": "11.1.1"
+    }
   },
   "msw": {
     "workerDirectory": [

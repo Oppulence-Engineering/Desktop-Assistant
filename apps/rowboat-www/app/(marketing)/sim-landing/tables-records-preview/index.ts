@@ -1,1 +1,1 @@
-export { TablesRecordsPreview } from './tables-records-preview'
+export { TablesRecordsPreview } from "./tables-records-preview";

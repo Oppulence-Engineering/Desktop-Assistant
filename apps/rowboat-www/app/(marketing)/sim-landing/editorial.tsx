@@ -19,11 +19,13 @@ interface HonestMetric {
 const METRICS: HonestMetric[] = [
   {
     value: 5,
-    description: "first-party connectors in the public catalog: Gmail, Calendar, Slack, HubSpot, and MCP.",
+    description:
+      "first-party connectors in the public catalog: Gmail, Calendar, Slack, HubSpot, and MCP.",
   },
   {
     value: 2,
-    description: "sided commitment register: what your team promised and what the other side promised.",
+    description:
+      "sided commitment register: what your team promised and what the other side promised.",
   },
   {
     value: 0,
@@ -123,7 +125,9 @@ function SimHonestMetrics() {
                 aria-hidden="true"
                 className={cn(
                   "inline-block origin-left tabular-nums transition-[opacity,transform] duration-500 ease-out motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100 motion-reduce:transition-none",
-                  count > 0 ? "translate-y-0 scale-100 opacity-100" : "translate-y-3 scale-95 opacity-0",
+                  count > 0
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "translate-y-3 scale-95 opacity-0",
                 )}
               >
                 {formattedValue}
@@ -242,8 +246,12 @@ export function SimProblemEditorial() {
           {explainTerms.map((item) => (
             <article key={item.title}>
               <p className="text-[13px] text-[var(--text-secondary)]">{item.chip}</p>
-              <h3 className="mt-2 text-[18px] font-medium text-[var(--text-primary)]">{item.title}</h3>
-              <p className="mt-2 text-[15px] leading-[1.45] text-[var(--text-secondary)]">{item.body}</p>
+              <h3 className="mt-2 text-[18px] font-medium text-[var(--text-primary)]">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-[15px] leading-[1.45] text-[var(--text-secondary)]">
+                {item.body}
+              </p>
             </article>
           ))}
         </div>

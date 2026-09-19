@@ -7,14 +7,15 @@ Marketing site plus the authenticated Oppulence dashboard.
 ```text
 app/          Next.js routes, layouts, and route-private components
 components/   Reusable product components and component conventions
-config/       Architecture, contract-generation, and quality policy
+config/       Architecture, contract-generation, growth-standard templates, and quality policy
 docs/         Application-specific design and engineering records
 e2e/          Playwright end-to-end and accessibility coverage
 hooks/        Shared React hooks
 lib/          Auth, API, storage, and domain integration code
 public/       Static assets
 quality/      Repository policy and architecture tests
-scripts/      Contributor automation and container entrypoints
+scripts/      Contributor automation, `npm run gen`, and container entrypoints
+stores/       Ephemeral Zustand stores (generated; not for navigation or server data)
 types/        Cross-cutting application types
 ```
 
@@ -56,15 +57,16 @@ Floating **Dev** panel (bottom-right): Web Vitals, BFF request log (with
 `requestId` / `errorCode`), live axe, MSW personas, session helpers, stack
 health. Route catalog: [http://localhost:18082/dev/routes](http://localhost:18082/dev/routes).
 
-| Tool                    | How                                                    |
-| ----------------------- | ------------------------------------------------------ |
-| TanStack Query Devtools | Product routes — corner toggle                         |
-| React Scan              | Toolbar overlay — unnecessary re-renders               |
-| React Grab              | Hold **Space** — pick elements; MCP on `:5567`–`:5570` |
-| MSW                     | Dev toolkit → Tools → enable mocks + persona           |
-| Storybook               | `npm run storybook` — `@oppulence/ui` primitives       |
-| React Doctor            | `npm run dev:doctor`                                   |
-| Contracts drift         | `npm run dev:contracts`                                |
+| Tool                    | How                                                                  |
+| ----------------------- | -------------------------------------------------------------------- |
+| TanStack Query Devtools | Product routes — corner toggle                                       |
+| React Scan              | Toolbar overlay — unnecessary re-renders                             |
+| React Grab              | Hold **Space** — pick elements; MCP on `:5567`–`:5570`               |
+| MSW                     | Dev toolkit → Tools → enable mocks + persona                         |
+| Storybook               | `npm run storybook` — `@oppulence/ui` plus colocated product stories |
+| Scaffolding             | `npm run gen` — pages, components, Zod, hooks, mutations, stores     |
+| React Doctor            | `npm run dev:doctor`                                                 |
+| Contracts drift         | `npm run dev:contracts`                                              |
 
 See `docs/product-flow.md` (auth/BFF sequence) and `docs/dev-debt.md` (eslint
 legacy burn-down). Per-route READMEs live under `app/(product)/app/*/README.md`.
@@ -119,7 +121,7 @@ to seal or verify auth cookies without `ROWBOAT_WWW_SESSION_SECRET`.
 ## Support chat
 
 Plain's chat widget is mounted on both the marketing site and the dashboard by
-`components/features/support/support-chat.tsx`. Threads land in the same Plain
+`components/features/support/support-chat/support-chat.tsx`. Threads land in the same Plain
 workspace as the desktop app's in-app feedback (`POST /v1/feedback`), so there
 is one support inbox rather than one per surface.
 

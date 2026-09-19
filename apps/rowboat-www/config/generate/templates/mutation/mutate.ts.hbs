@@ -1,0 +1,48 @@
+import { z } from "zod";
+
+import { {{orvalSchema}}{{#if hasBody}}, {{orvalBody}}{{/if}} } from "{{orvalImport}}";
+import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
+
+{{#if hasBody}}export const {{pascalName}}InputSchema = {{orvalBody}};
+
+export type {{pascalName}}Input = z.infer<typeof {{pascalName}}InputSchema>;
+{{else}}export const {{pascalName}}InputSchema = z.undefined();
+
+export type {{pascalName}}Input = z.infer<typeof {{pascalName}}InputSchema>;
+{{/if}}
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Same-origin BFF write for {{title}}. Validates the response with
+ * {{orvalSchema}}. Do not cast the parsed result. Owned by `use-{{name}}.lit.ts`.
+ */
+export function {{camelName}}Path({{#if hasPathParams}}{{pathParamsSignature}}{{/if}}): string {
+  return {{fetchPathExpression}};
+}
+
+export async function {{loadName}}(
+  request: RequestJsonFn,
+  {{#if hasPathParams}}{{pathParamsSignature}},
+  {{/if}}{{#if hasBody}}body: {{pascalName}}Input,
+  {{/if}}signal?: AbortSignal,
+) {
+  return request({
+    path: {{camelName}}Path({{#if hasPathParams}}{{pathParamsCall}}{{/if}}),
+    method: "{{httpMethod}}",
+    schema: {{orvalSchema}},
+    {{#if hasBody}}body,
+    {{/if}}signal,
+  });
+}
+
+export function {{fetchName}}(
+  {{#if hasPathParams}}{{pathParamsSignature}},
+  {{/if}}{{#if hasBody}}body: {{pascalName}}Input,
+  {{/if}}signal?: AbortSignal,
+) {
+  return {{loadName}}(
+    requestJson,
+    {{#if hasPathParams}}{{pathParamsCall}},
+    {{/if}}{{#if hasBody}}body,
+    {{/if}}signal,
+  );
+}

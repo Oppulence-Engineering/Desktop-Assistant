@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import type { ReactNode } from 'react'
-import { cn } from '@sim/emcn'
-import { PLATFORM_LOOP_DESIGN } from '../platform-loop-constants'
-import { ResponsiveDesignStage } from '../responsive-design-stage'
+import type { ReactNode } from "react";
+import { cn } from "@sim/emcn";
+import { PLATFORM_LOOP_DESIGN } from "../platform-loop-constants";
+import { ResponsiveDesignStage } from "../responsive-design-stage";
 import {
   EnterpriseSidebar,
   type EnterpriseSidebarProps,
-} from '../../enterprise-sidebar/enterprise-sidebar'
+} from "../../enterprise-sidebar/enterprise-sidebar";
 
 interface HeroLoopShellProps {
   /** Workspace name in the sidebar header chip. */
-  workspaceName?: string
+  workspaceName?: string;
   /** Viewer name shown in the sidebar profile footer. */
-  profileName?: string
+  profileName?: string;
   /** Recent-chat entries in the sidebar - four fill the design height. */
-  chats: readonly string[]
+  chats: readonly string[];
   /** Deployed-workflow entries in the sidebar - five fill the design height. */
-  workflows: readonly string[]
+  workflows: readonly string[];
   /** Sidebar row to highlight; unset keeps New chat active. */
-  activeItem?: EnterpriseSidebarProps['activeItem']
+  activeItem?: EnterpriseSidebarProps["activeItem"];
   /** Native keeps product chrome at its real CSS size; scaled fits fixed captures. */
-  mode?: 'native' | 'scaled'
+  mode?: "native" | "scaled";
   /** The workspace pane's contents, rendered inside the inset pane gutter. */
-  children: ReactNode
+  children: ReactNode;
 }
 
 /**
@@ -32,17 +32,17 @@ interface HeroLoopShellProps {
  * the 238px sidebar and 14px product type are never magnified.
  */
 export function HeroLoopShell({
-  workspaceName = 'Acme Corp',
-  profileName = 'You',
+  workspaceName = "Acme Corp",
+  profileName = "You",
   chats,
   workflows,
   activeItem,
-  mode = 'scaled',
+  mode = "scaled",
   children,
 }: HeroLoopShellProps) {
   const workspace = (
     <>
-      <div className={cn(mode === 'native' && 'max-md:hidden')}>
+      <div className={cn(mode === "native" && "max-md:hidden")}>
         <EnterpriseSidebar
           workspaceName={workspaceName}
           profileName={profileName}
@@ -51,25 +51,25 @@ export function HeroLoopShell({
           activeItem={activeItem}
         />
       </div>
-      <div className='h-full min-w-0 flex-1 py-[7px] pr-[8px] max-md:pl-[8px]'>{children}</div>
+      <div className="h-full min-w-0 flex-1 py-[7px] pr-[8px] max-md:pl-[8px]">{children}</div>
     </>
-  )
+  );
 
-  if (mode === 'native') {
+  if (mode === "native") {
     return (
-      <div className='absolute inset-0 flex overflow-hidden bg-[var(--surface-1)]'>{workspace}</div>
-    )
+      <div className="absolute inset-0 flex overflow-hidden bg-[var(--surface-1)]">{workspace}</div>
+    );
   }
 
   return (
     <ResponsiveDesignStage
       width={PLATFORM_LOOP_DESIGN.width}
       height={PLATFORM_LOOP_DESIGN.height}
-      align='start'
-      className='pointer-events-none absolute inset-0'
-      contentClassName='flex bg-[var(--surface-1)]'
+      align="start"
+      className="pointer-events-none absolute inset-0"
+      contentClassName="flex bg-[var(--surface-1)]"
     >
       {workspace}
     </ResponsiveDesignStage>
-  )
+  );
 }

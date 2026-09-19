@@ -1,0 +1,31 @@
+import type { QueryClient } from "@tanstack/react-query";
+
+import { {{loadName}}{{#if hasQuery}}, type {{queryTypeName}}{{/if}} } from "@/hooks/queries/utils/fetch-{{name}}";
+import { {{keysName}}, {{staleName}} } from "@/hooks/queries/utils/{{name}}-keys";
+import { requestUpstreamJson } from "@/lib/api/request-json.server";
+import { seedQuery } from "@/lib/query/get-query-client";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Seed the same keys and staleTime {{hookName}} reads.
+ * Talks to Go with the sealed session — never loopbacks through `/api/rowboat`.
+ * Owned by `use-{{name}}.lit.ts`.
+ */
+export async function {{prefetchName}}(
+  queryClient: QueryClient,
+  {{#if hasPathParams}}{{pathParamsSignature}},
+  {{/if}}{{#if hasQuery}}query?: {{queryTypeName}},
+  {{/if}}
+): Promise<void> {
+  await seedQuery(queryClient, {
+    queryKey: {{keysName}}.{{#if hasPathParams}}detail({{pathParamsCall}}{{#if hasQuery}}, query{{/if}}){{else}}{{#if hasQuery}}list(query){{else}}all{{/if}}{{/if}},
+    queryFn: ({ signal }) =>
+      {{loadName}}(
+        requestUpstreamJson,
+        {{#if hasPathParams}}{{pathParamsCall}},
+        {{/if}}{{#if hasQuery}}query,
+        {{/if}}signal,
+      ),
+    staleTime: {{staleName}},
+  });
+}

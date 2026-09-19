@@ -21,17 +21,11 @@ export function OverviewMenuPreview({ layout = "menu" }: OverviewMenuPreviewProp
       data-menu-preview="overview"
       inert
     >
-      <IsoIntegrateIllustration
-        className="size-[min(33cqw,212px)]"
-        size={212}
-        variant="outline"
-      />
-      <IsoMonitorIllustration
-        className="size-[min(33cqw,212px)]"
-        size={212}
-        variant="outline"
-      />
-      {isHero ? <EdgeFade depth="preview" edges={["top", "left", "right"]} ground="canvas" /> : null}
+      <IsoIntegrateIllustration className="size-[min(33cqw,212px)]" size={212} variant="outline" />
+      <IsoMonitorIllustration className="size-[min(33cqw,212px)]" size={212} variant="outline" />
+      {isHero ? (
+        <EdgeFade depth="preview" edges={["top", "left", "right"]} ground="canvas" />
+      ) : null}
     </div>
   );
 }

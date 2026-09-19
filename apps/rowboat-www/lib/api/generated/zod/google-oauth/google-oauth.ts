@@ -12,9 +12,7 @@ import * as zod from "zod";
  * @summary Handle Google OAuth callback
  */
 export const HandleGoogleOAuthCallbackQueryParams = zod.object({
-  state: zod
-    .string()
-    .describe("Opaque user-bound state ticket minted by \/v1\/google-oauth\/start."),
+  state: zod.string().describe("Opaque user-bound state ticket minted by /v1/google-oauth/start."),
   code: zod.string().optional().describe("Authorization code returned by Google."),
   error: zod
     .string()
@@ -123,9 +121,9 @@ export const ClaimGoogleOAuthBody = zod
   .strictObject({
     session: zod
       .string()
-      .describe("Opaque state\/session ticket returned to the desktop deep link."),
+      .describe("Opaque state/session ticket returned to the desktop deep link."),
   })
-  .describe("Redeems a one-time Google OAuth handoff ticket parked by \/oauth\/google\/callback.");
+  .describe("Redeems a one-time Google OAuth handoff ticket parked by /oauth/google/callback.");
 
 export const ClaimGoogleOAuth200Response = zod
   .strictObject({

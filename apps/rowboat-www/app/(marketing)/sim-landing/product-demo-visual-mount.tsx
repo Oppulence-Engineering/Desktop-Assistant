@@ -7,10 +7,9 @@ import { useProductDemoBeat } from "./product-demo-context";
 
 const CAPTION_CLEARANCE_GAP = 44;
 
-const ComposerLoop = dynamic(
-  () => import("./composer-loop").then((mod) => mod.ComposerLoop),
-  { ssr: false },
-);
+const ComposerLoop = dynamic(() => import("./composer-loop").then((mod) => mod.ComposerLoop), {
+  ssr: false,
+});
 
 function useLazyMount(rootMargin = "400px") {
   const ref = useRef<HTMLDivElement>(null);

@@ -1,9 +1,9 @@
+import { cacheLife } from "next/cache";
+
 import { customerStorySlug, publishedCustomerStories } from "@/lib/content/editorial";
 
 import { SimCustomersIndexPage } from "../sim-landing/subpages/sim-customers-index-page";
 import { marketingMetadata } from "../metadata";
-
-export const instant = false;
 
 export const metadata = marketingMetadata({
   title: "Customers",
@@ -12,7 +12,9 @@ export const metadata = marketingMetadata({
   path: "/customers",
 });
 
-export default function CustomersIndexPage() {
+export default async function CustomersIndexPage() {
+  "use cache";
+  cacheLife("days");
   const stories = publishedCustomerStories();
 
   return (

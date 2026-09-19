@@ -1,0 +1,17 @@
+import { z } from "zod";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Runtime contract for {{title}}.
+ *
+ * This module is validation only: no React, no fetch, no stores. Types are
+ * inferred from the schema so the shape cannot drift from the check.
+ * Owned by the sibling `{{name}}.lit.ts`.
+ */
+export const {{schemaName}} = z.object({
+{{#each fields}}
+  {{name}}: {{zod}},
+{{/each}}
+});
+
+export type {{fieldsTypeName}} = z.infer<typeof {{schemaName}}>;

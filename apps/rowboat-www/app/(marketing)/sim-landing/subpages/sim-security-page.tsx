@@ -78,12 +78,18 @@ export function SimSecurityPage() {
       <JsonLd data={faqJsonLd([...faqs])} />
       <section
         aria-labelledby="security-page-heading"
-        className={cn("flex w-full flex-col gap-16 pb-16 max-sm:gap-10 max-sm:pb-12", LANDING_CONTENT_WIDTH, LANDING_GUTTER)}
+        className={cn(
+          "flex w-full flex-col gap-16 pb-16 max-sm:gap-10 max-sm:pb-12",
+          LANDING_CONTENT_WIDTH,
+          LANDING_GUTTER,
+        )}
         id="security-page"
       >
         <div className="flex w-full items-start justify-between gap-10 max-sm:gap-5 max-xl:flex-col">
           <div className="flex flex-col gap-3 max-xl:w-full md:w-1/2">
-            <p className="text-[12px] text-[var(--text-muted)] uppercase tracking-[0.08em]">[security]</p>
+            <p className="text-[12px] text-[var(--text-muted)] uppercase tracking-[0.08em]">
+              [security]
+            </p>
             <h1
               className={cn("max-w-[16ch] text-balance text-[var(--text-primary)]", HOME_TYPE.h2)}
               id="security-page-heading"
@@ -107,8 +113,12 @@ export function SimSecurityPage() {
           {rows.map((row) => (
             <li key={row.title}>
               <article className="flex h-full flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-6 py-8 max-sm:px-5">
-                <h2 className="text-[18px] text-[var(--text-primary)] leading-[1.3]">{row.title}</h2>
-                <p className="text-[15px] text-[var(--text-secondary)] leading-[1.45]">{row.body}</p>
+                <h2 className="text-[18px] text-[var(--text-primary)] leading-[1.3]">
+                  {row.title}
+                </h2>
+                <p className="text-[15px] text-[var(--text-secondary)] leading-[1.45]">
+                  {row.body}
+                </p>
               </article>
             </li>
           ))}

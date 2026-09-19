@@ -21,11 +21,7 @@ export type SimCustomerStoryItem = {
 };
 
 /** Sim customers index — honest empty state or published story rows. No logo carousel. */
-export function SimCustomersIndexPage({
-  stories,
-}: {
-  stories: SimCustomerStoryItem[];
-}) {
+export function SimCustomersIndexPage({ stories }: { stories: SimCustomerStoryItem[] }) {
   const hasStories = stories.length > 0;
 
   return (
@@ -88,8 +84,9 @@ export function SimCustomersIndexPage({
           <section className="px-6 py-10">
             <div className={cn(SIM_SURFACE_CARD, "flex flex-col gap-3 p-6")}>
               <p className="text-[15px] text-[var(--text-body)] leading-[1.55]">
-                Add an approved write-up under <code className="text-[13px]">content/customers</code>.
-                Do not invent a company, a logo, or a time-saved number to fill this page.
+                Add an approved write-up under{" "}
+                <code className="text-[13px]">content/customers</code>. Do not invent a company, a
+                logo, or a time-saved number to fill this page.
               </p>
               <Link
                 className="text-[14px] text-[var(--text-body)] underline-offset-4 hover:underline"

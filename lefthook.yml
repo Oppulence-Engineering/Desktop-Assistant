@@ -46,6 +46,19 @@ pre-commit:
         - "component-architecture.json"
         - "components.json"
       run: npm test
+    rowboat-www-growth-standard:
+      priority: 30
+      root: "apps/rowboat-www/"
+      glob:
+        - "app/(product)/**/*.{ts,tsx}"
+        - "components/features/**/*.{ts,tsx}"
+        - "hooks/queries/**/*.ts"
+        - "stores/**/*.ts"
+        - "config/generate/**"
+        - "scripts/generate/**"
+        - "quality/generate-*.test.ts"
+        - "config/architecture/generator-baseline.json"
+      run: npm run gen:check
     # Scan only the staged diff for immediate credential feedback. CI scans
     # full history independently.
     gitleaks-staged:

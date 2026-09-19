@@ -3,14 +3,14 @@
  * actions — fill the tab strip's control band, so they match the strip's own
  * new-tab button and the panel's collapse toggle and the header reads as one row.
  */
-export const RESOURCE_TAB_ICON_BUTTON_CLASS = 'size-[var(--tab-strip-band,30px)] shrink-0 p-0'
+export const RESOURCE_TAB_ICON_BUTTON_CLASS = "size-[var(--tab-strip-band,30px)] shrink-0 p-0";
 
-export const RESOURCE_TAB_ICON_CLASS = 'size-[16px] text-[var(--text-icon)]'
+export const RESOURCE_TAB_ICON_CLASS = "size-[16px] text-[var(--text-icon)]";
 
 /** Shared geometry for the resource header and controls positioned over it. */
 export const RESOURCE_HEADER_CLASSES = {
   layout:
-    '[--resource-header-controls-height:40px] [--resource-header-end-inset:16px] [--resource-header-fixed-reserve:52px] [--resource-header-toggle-hit-size:40px] [--resource-header-toggle-size:30px]',
+    "[--resource-header-controls-height:40px] [--resource-header-end-inset:16px] [--resource-header-fixed-reserve:52px] [--resource-header-toggle-hit-size:40px] [--resource-header-toggle-size:30px]",
   /**
    * Drives the tab strip from this header's own tokens rather than restating the
    * strip's defaults, so the height the overlaid controls below are positioned
@@ -33,22 +33,22 @@ export const RESOURCE_HEADER_CLASSES = {
    * roomy and only tightens once the tabs start competing for the width.
    */
   stripGeometry:
-    '[--tab-strip-height:calc(var(--resource-header-controls-height)_+_1px)] [--tab-strip-band:26px] [--tab-strip-inline-start:var(--resource-header-end-inset)] [--tab-strip-inline-end:var(--resource-header-fixed-reserve)]',
+    "[--tab-strip-height:calc(var(--resource-header-controls-height)_+_1px)] [--tab-strip-band:26px] [--tab-strip-inline-start:var(--resource-header-end-inset)] [--tab-strip-inline-end:var(--resource-header-fixed-reserve)]",
   /**
    * Centred, matching the `floating` strip: its tabs and controls sit centred in
    * the header band rather than hanging from the top, so an overlaid control has
    * to centre too or it lands a pixel below the row it belongs to.
    */
-  overlay: 'absolute top-0 flex h-[var(--resource-header-controls-height)] items-center',
-  endPosition: 'right-[var(--resource-header-end-inset)]',
+  overlay: "absolute top-0 flex h-[var(--resource-header-controls-height)] items-center",
+  endPosition: "right-[var(--resource-header-end-inset)]",
   /**
    * Clears the collapse toggle's 40px hit target so adjacent controls never
    * compete for the same pointer area. The visible toggle remains 30px.
    */
   adjacentEndPosition:
-    'right-[calc(var(--resource-header-end-inset)_+_var(--resource-header-toggle-hit-size)_+_1px)]',
-  emptyAddOffset: '-translate-x-1.5',
-} as const
+    "right-[calc(var(--resource-header-end-inset)_+_var(--resource-header-toggle-hit-size)_+_1px)]",
+  emptyAddOffset: "-translate-x-1.5",
+} as const;
 
 /**
  * Width cap for the strip's tabs, from the tab count. A couple of tabs have
@@ -58,7 +58,7 @@ export const RESOURCE_HEADER_CLASSES = {
  * ellipsis point moves — a title that already fits never changes width.
  */
 export function resourceTabWidthClass(tabCount: number): string {
-  if (tabCount <= 2) return '[--tab-strip-max-tab-width:200px]'
-  if (tabCount === 3) return '[--tab-strip-max-tab-width:180px]'
-  return '[--tab-strip-max-tab-width:160px]'
+  if (tabCount <= 2) return "[--tab-strip-max-tab-width:200px]";
+  if (tabCount === 3) return "[--tab-strip-max-tab-width:180px]";
+  return "[--tab-strip-max-tab-width:160px]";
 }

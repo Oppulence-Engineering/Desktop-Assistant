@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 
 import { SimProductsPage } from "../sim-landing/subpages/sim-products-page";
 
@@ -16,6 +17,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ProductsRoute() {
+export default async function ProductsRoute() {
+  "use cache";
+  cacheLife("days");
   return <SimProductsPage />;
 }

@@ -1,10 +1,17 @@
-import { ChatDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
+import { Suspense } from "react";
 
-// The dashboard leaf is a client tree that lazy-loads route panels. Next
-// drops it from instant prerender; opt out so that does not surface as a
-// hard "/app" crash overlay on every navigation.
-export const instant = false;
+import { ChatDashboardRoute } from "@/app/(product)/app/_components/chat-dashboard-route/chat-dashboard-route";
+import { prefetchChatHome } from "@/app/(product)/app/prefetch";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
+
+import ProductLoading from "./loading";
 
 export default function ProductPage() {
-  return <ChatDashboardRoute />;
+  return (
+    <Suspense fallback={<ProductLoading />}>
+      <PrefetchHydration seed={prefetchChatHome}>
+        <ChatDashboardRoute />
+      </PrefetchHydration>
+    </Suspense>
+  );
 }

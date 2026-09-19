@@ -3,13 +3,14 @@ import { spawnSync } from "node:child_process";
 const mode = process.argv[2] ?? "default";
 
 const stages = {
-  fast: ["format:check", "lint", "typecheck"],
+  fast: ["format:check", "lint", "typecheck", "gen:check"],
   default: [
     "format:check",
     "lint",
     "typecheck",
     "arch",
     "contracts:check",
+    "queries:check",
     "security:semgrep",
     "knip",
     "test",
@@ -23,6 +24,7 @@ const stages = {
     "typecheck",
     "arch",
     "contracts:check",
+    "queries:check",
     "security:semgrep",
     "knip",
     "test",

@@ -16,6 +16,7 @@ const allowedRootFiles = new Set([
   ".npmrc",
   ".prettierignore",
   "AGENTS.md",
+  "CLAUDE.md",
   "Dockerfile",
   "Dockerfile.dockerignore",
   "README.md",
@@ -26,6 +27,7 @@ const allowedRootFiles = new Set([
   "next.config.ts",
   "package-lock.json",
   "package.json",
+  "pnpm-lock.yaml",
   "playwright.config.ts",
   "postcss.config.mjs",
   "proxy.ts",
@@ -46,7 +48,7 @@ function isLocalRootFile(filename: string): boolean {
 // until a manual reload, and users reported the integration as broken.
 const externalFlowRefreshExemptions = new Map<string, string>([
   [
-    "components/app-settings.tsx",
+    "components/features/settings/app-settings/app-settings.tsx",
     "opens a static documentation link; there is no state to refresh",
   ],
 ]);

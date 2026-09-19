@@ -369,7 +369,7 @@ export const ListCloudEventRuns200Response = zod
             status: zod
               .string()
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             taskSlug: zod.string().nullish().describe("Slug of the task the run executed."),
             trigger: zod.enum(["event"]).describe("Run trigger."),
@@ -478,7 +478,7 @@ export const GenericWebhookBody = zod
     userId: zod.string().describe("Rowboat user id (UUID) owning the event."),
   })
   .describe(
-    "Signed generic webhook event ingestion. Defaults source=webhook; connector\/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId.",
+    "Signed generic webhook event ingestion. Defaults source=webhook; connector/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId.",
   );
 
 export const GenericWebhook200Response = zod
@@ -586,13 +586,13 @@ export const GoogleWebhookQueryParams = zod.object({
     .string()
     .optional()
     .describe(
-      "Development-only shared token for local Gmail Pub\/Sub mocks; production uses OIDC bearer authentication.",
+      "Development-only shared token for local Gmail Pub/Sub mocks; production uses OIDC bearer authentication.",
     ),
 });
 
 export const GoogleWebhookBody = zod
   .record(zod.string(), zod.unknown())
-  .describe("Pub\/Sub push envelope.");
+  .describe("Pub/Sub push envelope.");
 
 export const GoogleWebhook200Response = zod.unknown();
 

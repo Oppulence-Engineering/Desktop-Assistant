@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 
-import { SettingsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
-import { settingsSectionFromParam } from "@/lib/product-navigation";
+import { SettingsDashboardRoute } from "@/app/(product)/app/settings/_components/settings-dashboard-route/settings-dashboard-route";
+import { prefetchSettings } from "@/app/(product)/app/settings/prefetch";
+import { settingsSearchParamsCache } from "@/app/(product)/app/settings/search-params";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
 
-export const instant = false;
+import SettingsLoading from "./loading";
 
 type SettingsPageProps = {
   searchParams: Promise<{ settings?: string | string[] }>;
@@ -18,25 +20,20 @@ type SettingsPageProps = {
  */
 export default function SettingsPage({ searchParams }: SettingsPageProps) {
   return (
-    <Suspense fallback={<SettingsRouteFallback />}>
+    <Suspense fallback={<SettingsLoading />}>
       <SettingsRouteContent searchParams={searchParams} />
     </Suspense>
   );
 }
 
 async function SettingsRouteContent({ searchParams }: SettingsPageProps) {
-  const { settings } = await searchParams;
+  const raw = await searchParams;
+  const { settings } = settingsSearchParamsCache.parse({
+    settings: Array.isArray(raw.settings) ? raw.settings[0] : raw.settings,
+  });
   return (
-    <SettingsDashboardRoute
-      section={settingsSectionFromParam(Array.isArray(settings) ? settings[0] : settings)}
-    />
-  );
-}
-
-function SettingsRouteFallback() {
-  return (
-    <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-      Loading settings…
-    </div>
+    <PrefetchHydration seed={prefetchSettings}>
+      <SettingsDashboardRoute section={settings} />
+    </PrefetchHydration>
   );
 }

@@ -1,0 +1,35 @@
+import { describe, expect, it, vi } from "vitest";
+
+{{#if hasMsw}}import { {{mswMock}} } from "{{mswImport}}";
+{{/if}}import { {{orvalSchema}} } from "{{orvalImport}}";
+import type { RequestJsonFn } from "@/lib/api/request-json";
+
+import { {{camelName}}Path, {{loadName}} } from "./fetch-{{name}}";
+
+/**
+ * Contract test for the generated fetcher. Uses the Orval MSW fixture so
+ * `contracts:generate` drift fails here instead of in the browser.
+ */
+describe("{{fetchName}}", () => {
+{{#if hasMsw}}  it("accepts the Orval MSW fixture without a cast", () => {
+    expect({{orvalSchema}}.parse({{mswMock}}())).toEqual({{orvalSchema}}.parse({{mswMock}}()));
+  });
+
+  it("loads through requestJson with the Orval path and schema", async () => {
+    const payload = {{orvalSchema}}.parse({{mswMock}}());
+    const request = vi.fn(async (input: Parameters<RequestJsonFn>[0]) => input.schema.parse(payload));
+    await expect({{loadName}}(request{{#if hasPathParams}}, {{pathParamsSamples}}{{/if}})).resolves.toEqual(
+      payload,
+    );
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: {{camelName}}Path({{#if hasPathParams}}{{pathParamsSamples}}{{/if}}),
+        schema: {{orvalSchema}},
+      }),
+    );
+  });
+{{else}}  it("builds the BFF path", () => {
+    expect({{camelName}}Path({{#if hasPathParams}}{{pathParamsSamples}}{{/if}})).toContain("/");
+  });
+{{/if}}
+});

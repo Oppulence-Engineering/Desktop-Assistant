@@ -1,9 +1,5 @@
 /** A body block inside a legal section. */
-export type LegalBlock =
-  | string
-  | string[]
-  | { term: string; text: string }[]
-  | { callout: string };
+export type LegalBlock = string | string[] | { term: string; text: string }[] | { callout: string };
 
 export type LegalSection = {
   heading: string;

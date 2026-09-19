@@ -2,7 +2,16 @@ import "client-only";
 
 import { z } from "zod";
 
+import {
+  ComposioUnconfiguredError,
+  fetchComposioConnections,
+  fetchComposioToolkits,
+  type ComposioConnection,
+  type ComposioToolkit,
+} from "@/hooks/queries/utils/fetch-composio";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+
+export { ComposioUnconfiguredError, type ComposioConnection, type ComposioToolkit };
 
 /**
  * The hosted Composio connect flow.
@@ -13,38 +22,13 @@ import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
  * project key can reach every connection in the project.
  */
 
-const ToolkitSchema = z.object({
-  slug: z.string(),
-  name: z.string().optional().default(""),
-  managedAuth: z.boolean().optional().default(false),
-});
-
-const ConnectionSchema = z.object({
-  id: z.string(),
-  toolkit: z.string().optional().default(""),
-  status: z.string().optional().default(""),
-  createdAt: z.string().optional().default(""),
-});
-
-const ToolkitsResponseSchema = z.object({ toolkits: ToolkitSchema.array().default([]) });
-const ConnectionsResponseSchema = z.object({ connections: ConnectionSchema.array().default([]) });
 const ConnectLinkSchema = z.object({
   connectionId: z.string().optional().default(""),
   redirectUrl: z.url(),
   expiresAt: z.string().optional().default(""),
 });
 
-export type ComposioToolkit = z.infer<typeof ToolkitSchema>;
-export type ComposioConnection = z.infer<typeof ConnectionSchema>;
 export type ComposioConnectLink = z.infer<typeof ConnectLinkSchema>;
-
-/** Raised when this deployment holds no Composio project key. */
-export class ComposioUnconfiguredError extends Error {
-  constructor() {
-    super("Composio is not configured on this server");
-    this.name = "ComposioUnconfiguredError";
-  }
-}
 
 async function call<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
   const response = await dashboardFetch(toDashboardAPIPath(path), {
@@ -62,15 +46,11 @@ async function call<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): 
 }
 
 export async function listComposioToolkits(signal?: AbortSignal): Promise<ComposioToolkit[]> {
-  const data = await call("/composio/toolkits", ToolkitsResponseSchema, { signal });
-  // Only products Composio can authorize on our behalf can be connected with a
-  // single click; the rest would need an OAuth app of our own first.
-  return data.toolkits.filter((toolkit) => toolkit.managedAuth);
+  return fetchComposioToolkits(signal);
 }
 
 export async function listComposioConnections(signal?: AbortSignal): Promise<ComposioConnection[]> {
-  const data = await call("/composio/connections", ConnectionsResponseSchema, { signal });
-  return data.connections;
+  return fetchComposioConnections(signal);
 }
 
 export function startComposioConnection(toolkit: string): Promise<ComposioConnectLink> {

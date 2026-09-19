@@ -8,12 +8,29 @@
     "e2e-stack/**/*.spec.ts",
     ".storybook/**/*.{ts,tsx}",
     "stories/**/*.{ts,tsx}",
+    "components/**/*.stories.{ts,tsx}",
+    "app/**/*.stories.{ts,tsx}",
     "quality/**/*.{ts,tsx}",
     "*.config.{ts,mjs}",
     "config/**/*.{ts,mts}",
     "instrumentation.ts"
   ],
-  "project": ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "!lib/api/generated/**"],
+  "project": [
+    "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}",
+    "!lib/api/generated/**",
+    "!vendor/**",
+    "!sim-port/**"
+  ],
+  "ignore": [
+    "vendor/**",
+    "sim-port/**",
+    "lib/sim-port/**",
+    "components/sim/**",
+    "hooks/sim/**",
+    "components/legal/current-year.tsx",
+    "components/legal/legal-document.tsx",
+    "stores/browser-session/store.ts"
+  ],
   "ignoreFiles": [
     "components/ai-elements/canvas.tsx",
     "components/ai-elements/chain-of-thought.tsx",
@@ -37,34 +54,51 @@
     "components/ai-elements/task.tsx",
     "components/ai-elements/toolbar.tsx",
     "components/ai-elements/web-preview.tsx",
-    "hooks/use-mobile.ts",
     "lib/icon.tsx",
     "lib/api/generated/**",
     "quality/fixtures/**",
-    ".rowboat-contracts-*/**"
+    ".rowboat-contracts-*/**",
+    "vendor/**",
+    "sim-port/**",
+    "lib/sim-port/**",
+    "components/sim/**",
+    "hooks/sim/**"
   ],
   "ignoreIssues": {
     "components/ai-elements/{code-block,conversation,message,prompt-input,reasoning}.tsx": [
       "exports",
       "types"
     ],
-    "lib/{actions,cloud-workflows,revenue,metadata,product-navigation,dashboard-resource,dashboard-schemas,agent-history}.ts": [
+    "lib/metadata.ts": ["exports", "types"],
+    "lib/actions/actions.ts": ["exports", "types"],
+    "lib/agents/agent-history.ts": ["exports", "types"],
+    "lib/dashboard/{product-navigation,dashboard-resource,dashboard-schemas}.ts": [
       "exports",
       "types"
     ],
+    "lib/revenue/{revenue,types}.ts": ["exports", "types"],
+    "lib/actions/types.ts": ["exports", "types"],
+    "lib/workflows/cloud-workflows.ts": ["exports", "types"],
     "lib/icons.tsx": ["exports", "types"],
     "lib/connectors/hosted-oauth.ts": ["exports", "types"],
     "lib/content/editorial.ts": ["exports", "types"],
     "lib/agents/agent-schemas.ts": ["exports", "types"],
     "lib/api/**": ["exports", "types"],
+    "hooks/queries/**": ["exports", "types"],
     "lib/auth/{proxy,pkce}.ts": ["exports", "types"],
     "lib/dev/{debug-bundle,route-catalog}.ts": ["exports", "types"],
-    "components/revenue/shared.tsx": ["exports", "types"],
+    "components/features/revenue/shared/shared.tsx": ["exports", "types"],
     "components/features/dashboard/chat-route-provider/chat-route-provider.tsx": [
       "exports",
       "types"
     ],
-    "types/{actions,revenue}.ts": ["exports", "types"]
+    "lib/uploads/utils/validation.ts": ["exports", "types"],
+    "app/(marketing)/sim-landing/legal/sim-legal-document-page.tsx": ["duplicates", "exports"],
+    "app/(marketing)/sim-landing/hero-chat-loop/hero-chat-loop.test.tsx": ["unresolved"],
+    "components/sim/**": ["exports", "types", "files"],
+    "hooks/sim/**": ["exports", "types", "files"],
+    "components/legal/**": ["exports", "types", "files"],
+    "components/features/revenue/relationships-view/relationships-view.tsx": ["exports"]
   },
   "ignoreDependencies": [
     "@emotion/react",
@@ -110,7 +144,9 @@
     "tailwindcss",
     "tokenlens",
     "tw-animate-css",
-    "v0-sdk"
+    "v0-sdk",
+    "zustand",
+    "plop"
   ],
   "ignoreBinaries": ["go", "pipx", "psql", "semgrep", "sqlite3"]
 }

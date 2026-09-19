@@ -36,10 +36,7 @@ export function SimLegalRelatedLinks({
   return (
     <nav
       aria-label="Related legal documents"
-      className={cn(
-        "flex flex-wrap gap-2 border-[var(--border)] border-t pt-8",
-        className,
-      )}
+      className={cn("flex flex-wrap gap-2 border-[var(--border)] border-t pt-8", className)}
     >
       {related.map((doc) => (
         <SimCtaLink href={doc.href} key={doc.href} size="compact" variant="outline">

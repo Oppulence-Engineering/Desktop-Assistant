@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /**
  * Global snap signal: bumping the epoch makes every mounted smooth-text reveal
@@ -7,22 +7,22 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
  * "my stop didn't work", so the paced reveal must end NOW, not over the drain
  * horizon. One-shot per bump: subsequent streams pace normally again.
  */
-let snapEpoch = 0
-const snapListeners = new Set<() => void>()
+let snapEpoch = 0;
+const snapListeners = new Set<() => void>();
 
 function subscribeToSnapEpoch(listener: () => void): () => void {
-  snapListeners.add(listener)
-  return () => snapListeners.delete(listener)
+  snapListeners.add(listener);
+  return () => snapListeners.delete(listener);
 }
 
 function getSnapEpoch(): number {
-  return snapEpoch
+  return snapEpoch;
 }
 
 /** Snap every mounted smooth-text reveal to its full content immediately. */
 export function snapAllSmoothText(): void {
-  snapEpoch++
-  for (const listener of [...snapListeners]) listener()
+  snapEpoch++;
+  for (const listener of [...snapListeners]) listener();
 }
 
 /**
@@ -38,18 +38,18 @@ export function snapAllSmoothText(): void {
  * racing ahead at a fixed cap, emptying the backlog, and stalling until the
  * next network burst (the old burst–pause rhythm).
  */
-const SNAP = /[\s.,!?;:)\]]/
+const SNAP = /[\s.,!?;:)\]]/;
 
 /** Reveal the backlog over roughly this horizon (a small jitter buffer). */
-const DRAIN_HORIZON_MS = 400
+const DRAIN_HORIZON_MS = 400;
 /** Floor so a near-empty backlog still trickles out instead of freezing. */
-const MIN_CPS = 45
+const MIN_CPS = 45;
 /** Cap so a huge backlog (resume, giant paste) sweeps in over ~a second. */
-const MAX_CPS = 2400
+const MAX_CPS = 2400;
 
 /** Chars/second that drains `remaining` over the horizon, clamped. */
 function drainRate(remaining: number): number {
-  return Math.min(MAX_CPS, Math.max(MIN_CPS, (remaining * 1000) / DRAIN_HORIZON_MS))
+  return Math.min(MAX_CPS, Math.max(MIN_CPS, (remaining * 1000) / DRAIN_HORIZON_MS));
 }
 
 /**
@@ -60,12 +60,12 @@ function drainRate(remaining: number): number {
  * long identifier) cannot dam the reveal.
  */
 function nextIndex(text: string, start: number, budget: number): number {
-  const limit = Math.min(text.length, start + Math.floor(budget))
+  const limit = Math.min(text.length, start + Math.floor(budget));
   for (let i = limit; i > start; i--) {
-    if (SNAP.test(text[i - 1] ?? '')) return i
+    if (SNAP.test(text[i - 1] ?? "")) return i;
   }
-  if (limit >= Math.min(text.length, start + 24)) return limit
-  return start
+  if (limit >= Math.min(text.length, start + 24)) return limit;
+  return start;
 }
 
 /**
@@ -75,7 +75,7 @@ function nextIndex(text: string, start: number, budget: number): number {
  * from the first character. Consumers gating reveal animations should use the
  * same threshold so pacing and animation agree on what counts as "new".
  */
-export const RESUME_SKIP_THRESHOLD = 60
+export const RESUME_SKIP_THRESHOLD = 60;
 
 interface SmoothTextOptions {
   /**
@@ -86,7 +86,7 @@ interface SmoothTextOptions {
    * append streams. Defaults to `false`, which keeps the original
    * pull-back-on-shrink behavior used by the chat.
    */
-  snapOnNonAppend?: boolean
+  snapOnNonAppend?: boolean;
 }
 
 /**
@@ -119,36 +119,36 @@ interface SmoothTextOptions {
 export function useSmoothText(
   content: string,
   isStreaming: boolean,
-  options?: SmoothTextOptions
+  options?: SmoothTextOptions,
 ): string {
-  const snapOnNonAppend = options?.snapOnNonAppend ?? false
+  const snapOnNonAppend = options?.snapOnNonAppend ?? false;
 
   const [revealed, setRevealed] = useState(() =>
-    isStreaming && content.length <= RESUME_SKIP_THRESHOLD ? 0 : content.length
-  )
+    isStreaming && content.length <= RESUME_SKIP_THRESHOLD ? 0 : content.length,
+  );
 
-  const contentRef = useRef(content)
-  const revealedRef = useRef(revealed)
-  const rafRef = useRef<number | null>(null)
+  const contentRef = useRef(content);
+  const revealedRef = useRef(revealed);
+  const rafRef = useRef<number | null>(null);
   /** Fractional character budget carried between frames (see the frame loop). */
-  const budgetRef = useRef(0)
-  const lastFrameAtRef = useRef(0)
-  const prevContentRef = useRef(content)
-  const prevIsStreamingRef = useRef(isStreaming)
+  const budgetRef = useRef(0);
+  const lastFrameAtRef = useRef(0);
+  const prevContentRef = useRef(content);
+  const prevIsStreamingRef = useRef(isStreaming);
 
-  const currentSnapEpoch = useSyncExternalStore(subscribeToSnapEpoch, getSnapEpoch, getSnapEpoch)
-  const [prevSnapEpoch, setPrevSnapEpoch] = useState(currentSnapEpoch)
+  const currentSnapEpoch = useSyncExternalStore(subscribeToSnapEpoch, getSnapEpoch, getSnapEpoch);
+  const [prevSnapEpoch, setPrevSnapEpoch] = useState(currentSnapEpoch);
 
-  let effectiveRevealed = revealed
+  let effectiveRevealed = revealed;
 
   // A user Stop bumped the snap epoch: reveal everything now instead of
   // draining the backlog at the paced cadence.
   if (prevSnapEpoch !== currentSnapEpoch) {
-    setPrevSnapEpoch(currentSnapEpoch)
+    setPrevSnapEpoch(currentSnapEpoch);
     if (revealed < content.length) {
-      effectiveRevealed = content.length
-      revealedRef.current = content.length
-      setRevealed(content.length)
+      effectiveRevealed = content.length;
+      revealedRef.current = content.length;
+      setRevealed(content.length);
     }
   }
 
@@ -158,9 +158,9 @@ export function useSmoothText(
     content.length > RESUME_SKIP_THRESHOLD &&
     revealed < content.length
   ) {
-    effectiveRevealed = content.length
-    revealedRef.current = content.length
-    setRevealed(content.length)
+    effectiveRevealed = content.length;
+    revealedRef.current = content.length;
+    setRevealed(content.length);
   }
 
   if (
@@ -169,14 +169,14 @@ export function useSmoothText(
     !content.startsWith(prevContentRef.current) &&
     effectiveRevealed < content.length
   ) {
-    effectiveRevealed = content.length
-    revealedRef.current = content.length
-    setRevealed(content.length)
+    effectiveRevealed = content.length;
+    revealedRef.current = content.length;
+    setRevealed(content.length);
   }
 
-  contentRef.current = content
+  contentRef.current = content;
 
-  const hasBacklog = effectiveRevealed < content.length
+  const hasBacklog = effectiveRevealed < content.length;
 
   // Advance the previous-input trackers on commit, never during render. A concurrent render can be
   // started and then thrown away before it commits (interrupted by a higher-priority update); a
@@ -184,9 +184,9 @@ export function useSmoothText(
   // `prev` and skip the snap. Updating them in a committed effect keeps `prev` in lockstep with the
   // render that actually committed, so the snap decision is identical across discarded attempts.
   useEffect(() => {
-    prevContentRef.current = content
-    prevIsStreamingRef.current = isStreaming
-  }, [content, isStreaming])
+    prevContentRef.current = content;
+    prevIsStreamingRef.current = isStreaming;
+  }, [content, isStreaming]);
 
   useEffect(() => {
     /**
@@ -197,50 +197,50 @@ export function useSmoothText(
      * tick. Frames whose budget doesn't yet cover the next word update nothing.
      */
     const run = (now: number) => {
-      rafRef.current = null
-      const text = contentRef.current
-      const target = text.length
+      rafRef.current = null;
+      const text = contentRef.current;
+      const target = text.length;
 
       if (revealedRef.current > target) {
-        revealedRef.current = target
-        budgetRef.current = 0
-        setRevealed(target)
+        revealedRef.current = target;
+        budgetRef.current = 0;
+        setRevealed(target);
       }
-      const current = revealedRef.current
-      if (current >= target) return
+      const current = revealedRef.current;
+      if (current >= target) return;
 
       // Clamp dt so a background tab's paused rAF doesn't bank a giant budget.
-      const dt = Math.min(now - lastFrameAtRef.current, 100)
-      lastFrameAtRef.current = now
-      budgetRef.current += (drainRate(target - current) * dt) / 1000
+      const dt = Math.min(now - lastFrameAtRef.current, 100);
+      lastFrameAtRef.current = now;
+      budgetRef.current += (drainRate(target - current) * dt) / 1000;
 
-      const next = nextIndex(text, current, budgetRef.current)
+      const next = nextIndex(text, current, budgetRef.current);
       if (next > current) {
-        budgetRef.current -= next - current
-        revealedRef.current = next
-        setRevealed(next)
+        budgetRef.current -= next - current;
+        revealedRef.current = next;
+        setRevealed(next);
       }
       if (revealedRef.current < target) {
-        rafRef.current = requestAnimationFrame(run)
+        rafRef.current = requestAnimationFrame(run);
       }
-    }
+    };
 
     if (hasBacklog && rafRef.current === null) {
-      lastFrameAtRef.current = performance.now()
-      rafRef.current = requestAnimationFrame(run)
+      lastFrameAtRef.current = performance.now();
+      rafRef.current = requestAnimationFrame(run);
     }
-  })
+  });
 
   useEffect(
     () => () => {
       if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
     },
-    []
-  )
+    [],
+  );
 
-  if (effectiveRevealed >= content.length) return content
-  return content.slice(0, effectiveRevealed)
+  if (effectiveRevealed >= content.length) return content;
+  return content.slice(0, effectiveRevealed);
 }

@@ -1,24 +1,17 @@
-'use client'
+"use client";
 
-import { useEffect, useId, useRef, useState } from 'react'
-import { cn, usePrefersReducedMotion } from '@sim/emcn'
-import { Blimp } from '@sim/emcn/icons'
-import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
-import { ThinkingLoader } from '@/components/sim/thinking-loader'
-import {
-  ProductionWorkflowStage,
-  type ScriptedWorkflowState,
-} from './production-workflow-stage'
-import { DemoComposer } from './demo-composer'
-import {
-  DEMO_BLOCKS,
-  DEMO_CANVAS,
-  DEMO_EDGES,
-} from './demo-workflow-data'
-import type { ProductDemoBeatId } from './product-demo-beats'
+import { useEffect, useId, useRef, useState } from "react";
+import { cn, usePrefersReducedMotion } from "@sim/emcn";
+import { Blimp } from "@sim/emcn/icons";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { ThinkingLoader } from "@/components/sim/thinking-loader";
+import { ProductionWorkflowStage, type ScriptedWorkflowState } from "./production-workflow-stage";
+import { DemoComposer } from "./demo-composer";
+import { DEMO_BLOCKS, DEMO_CANVAS, DEMO_EDGES } from "./demo-workflow-data";
+import type { ProductDemoBeatId } from "./product-demo-beats";
 
 /** Test-compat alias — Sim's production React Flow stage powers the composer act. */
-export { ProductionWorkflowStage as ComposerWorkflowStage } from './production-workflow-stage'
+export { ProductionWorkflowStage as ComposerWorkflowStage } from "./production-workflow-stage";
 
 /**
  * The composer loop from the design studio's "Mothership input" iteration,
@@ -50,51 +43,51 @@ export { ProductionWorkflowStage as ComposerWorkflowStage } from './production-w
  */
 
 /** The composer's design width; the stage scales the whole group from here. */
-const WIDTH = 560
+const WIDTH = 560;
 /**
  * On wide frames the composer spans this share of the frame's width by scaling
  * the whole design, so type, radii, and motion all grow together - large
  * enough to read as the section's subject, well short of filling the stage.
  */
-const STAGE_FILL = 0.36
-const MAX_SCALE = 1.15
-const MIN_SCALE = 0.8
+const STAGE_FILL = 0.36;
+const MAX_SCALE = 1.15;
+const MIN_SCALE = 0.8;
 /**
  * The open group's design height (chat box, gap, composer) plus breathing
  * room. The scale also fits this into the frame's height - less any clearance
  * the frame owes to copy overlaid on it - so a short viewport never clips the
  * open chat or runs it into the heading.
  */
-const GROUP_FIT_HEIGHT = 360
+const GROUP_FIT_HEIGHT = 360;
 /** Below this frame width the design is not scaled; the composer shrinks to fit instead. */
-const NARROW_FRAME = 640
+const NARROW_FRAME = 640;
 /** Below this frame width the workflow act is skipped: seven cards cannot fit legibly. */
-const WORKFLOW_MIN_FRAME = 1024
+const WORKFLOW_MIN_FRAME = 1024;
 /** Breathing room the composer keeps from the frame's sides on narrow frames. */
-const FRAME_INSET = 32
-const MIN_WIDTH = 260
+const FRAME_INSET = 32;
+const MIN_WIDTH = 260;
 /** The product composer's radius (`rounded-2xl`), shared by the chat bloc that emerges from it. */
-const BOX_RADIUS = 16
+const BOX_RADIUS = 16;
 /** The sent prompt's bubble, on the platform's standard radius. */
-const BUBBLE_RADIUS = 16
+const BUBBLE_RADIUS = 16;
 /** The hairline both surfaces carry; the chat box's height compensates for it. */
-const HAIRLINE_PX = 1
+const HAIRLINE_PX = 1;
 /** Resting gap between the chat box and the composer. */
-const GAP = 10
+const GAP = 10;
 /** How far the chat box starts tucked behind the composer's top edge. */
-const BIRTH_Y = 20
+const BIRTH_Y = 20;
 /**
  * How much narrower than the composer the chat box is born - well inside the
  * composer's footprint, so it reads as squeezed out of the composer rather
  * than dropped onto it. It flares to full width only after lifting clear.
  */
-const BIRTH_INSET = 108
+const BIRTH_INSET = 108;
 /**
  * The opening window: the box's lift and flare springs have settled enough by
  * here that later content growth (the thinking row, the wrapping reply) rides
  * the quick grow spring instead.
  */
-const OPEN_MS = 850
+const OPEN_MS = 850;
 /**
  * The goo: the blur that fuses the two blocs' silhouettes while the box is
  * born. It rises as the box's lip emerges, holds through the narrow touch
@@ -102,14 +95,14 @@ const OPEN_MS = 850
  * the springs have carried the box past the blur's reach, so the neck thins
  * and snaps. It runs over the opening window.
  */
-const GOO_MS = OPEN_MS
-const GOO_MAX = 16
+const GOO_MS = OPEN_MS;
+const GOO_MAX = 16;
 const openGooAt = (t: number) => {
-  if (t < 0.16) return GOO_MAX * (t / 0.16) ** 2
-  if (t < 0.36) return GOO_MAX
-  if (t < 0.58) return GOO_MAX * (1 - (t - 0.36) / 0.22) ** 2
-  return 0
-}
+  if (t < 0.16) return GOO_MAX * (t / 0.16) ** 2;
+  if (t < 0.36) return GOO_MAX;
+  if (t < 0.58) return GOO_MAX * (1 - (t - 0.36) / 0.22) ** 2;
+  return 0;
+};
 /**
  * The alpha threshold that turns the blur back into a silhouette. Steep, so
  * edges stay crisp (the studio's gentle slope was the feather), but sitting
@@ -117,7 +110,7 @@ const openGooAt = (t: number) => {
  * blur and merge generously - that swell and the early merge are what read
  * as liquid.
  */
-const GOO_THRESHOLD = '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 60 -25'
+const GOO_THRESHOLD = "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 60 -25";
 /**
  * How far the composer's goo body is inset from the real composer. Under the
  * blur a thresholded silhouette swells by a few px per side; keeping the body
@@ -125,46 +118,46 @@ const GOO_THRESHOLD = '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 60 -25'
  * over it, so no white lip escapes any edge - only the top, where the box
  * pours in, is reached by the neck.
  */
-const GHOST_INSET = { x: 24, y: 6 } as const
+const GHOST_INSET = { x: 24, y: 6 } as const;
 /**
  * The composer's top hairline would cut across the neck, so for as long as
  * the goo is live a white bar the box's width (plus the fillets' reach, which
  * grows with the blur) covers it, fading with the blur so it is gone the
  * moment the neck is.
  */
-const FILLET_REACH = 1.1
-const BAR_FADE_SIGMA = 6
+const FILLET_REACH = 1.1;
+const BAR_FADE_SIGMA = 6;
 /** The meniscus outline: one device pixel, like the surfaces' hairline. */
 const hairlineRadius = () =>
-  typeof window === 'undefined' ? 0.5 : Math.max(0.5, 1 / (window.devicePixelRatio || 1))
+  typeof window === "undefined" ? 0.5 : Math.max(0.5, 1 / (window.devicePixelRatio || 1));
 /** Cycle-loader glyph size in the chat (thinking + reply rows, and the Blimp). */
-const LOADER_SIZE = 26
+const LOADER_SIZE = 26;
 /** The answer row reserves one glyph line so the box holds steady while thinking. */
-const ROW_MIN = LOADER_SIZE
+const ROW_MIN = LOADER_SIZE;
 /** Resting height of the one-line composer before it is measured. */
-const COMPOSER_BASE_HEIGHT = 78
+const COMPOSER_BASE_HEIGHT = 78;
 /** The reply text size, expressed for the loader's phase label. */
-const THINKING_LABEL_RATIO = 15 / LOADER_SIZE
+const THINKING_LABEL_RATIO = 15 / LOADER_SIZE;
 
 /**
  * Every geometry property rides a critically damped spring - bounce 0 - so
  * the box eases in and settles like a viscous blob instead of overshooting.
  */
-const OPEN_SPRING = { type: 'spring', duration: 0.9, bounce: 0 } as const
+const OPEN_SPRING = { type: "spring", duration: 0.9, bounce: 0 } as const;
 /** Height spring for content growth after the box has opened (a wrapping reply). */
-const GROW_SPRING = { type: 'spring', duration: 0.35, bounce: 0 } as const
-const MORPH_SPRING = { type: 'spring', duration: 0.3, bounce: 0 } as const
+const GROW_SPRING = { type: "spring", duration: 0.35, bounce: 0 } as const;
+const MORPH_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
 /**
  * Width shapes the emergence: opening holds the narrow birth width while the
  * box is still tucked, then flares quickly once it lifts clear.
  */
-const WIDTH_OPEN = { type: 'spring', duration: 0.42, bounce: 0, delay: 0.26 } as const
-const EASE_OUT_STRONG = [0.23, 1, 0.32, 1] as const
-const EASE_ENTRANCE = [0.25, 0.46, 0.45, 0.94] as const
-const EASE_EXIT = [0.45, 0, 0.55, 1] as const
+const WIDTH_OPEN = { type: "spring", duration: 0.42, bounce: 0, delay: 0.26 } as const;
+const EASE_OUT_STRONG = [0.23, 1, 0.32, 1] as const;
+const EASE_ENTRANCE = [0.25, 0.46, 0.45, 0.94] as const;
+const EASE_EXIT = [0.45, 0, 0.55, 1] as const;
 
 /** The product composer's resting `shadow-xs`; it drops once the conversation opens. */
-const SHELL_SHADOW = '0 1px 2px 0 rgba(0,0,0,0.05)'
+const SHELL_SHADOW = "0 1px 2px 0 rgba(0,0,0,0.05)";
 
 /**
  * The chat surface - the box, the seam bar, the goo bodies, and the goo
@@ -174,14 +167,14 @@ const SHELL_SHADOW = '0 1px 2px 0 rgba(0,0,0,0.05)'
  * dark ground. It is set on both the scene root and the filter's `<svg>`,
  * which are siblings, so the flood inherits it too.
  */
-const CHAT_SURFACE_VARS = '[--chat-surface:var(--white)] dark:[--chat-surface:var(--surface-4)]'
-const EMPTY_SHELL_SHADOW = '0 1px 2px 0 rgba(0,0,0,0)'
+const CHAT_SURFACE_VARS = "[--chat-surface:var(--white)] dark:[--chat-surface:var(--surface-4)]";
+const EMPTY_SHELL_SHADOW = "0 1px 2px 0 rgba(0,0,0,0)";
 
 const TYPED =
-  'Triage new Zendesk tickets: pull the runbook, classify severity, page on-call for P1s, and draft replies for approval.'
+  "Triage new Zendesk tickets: pull the runbook, classify severity, page on-call for P1s, and draft replies for approval.";
 const REPLY =
-  'On it — I’ll search your runbooks for each new ticket, classify its severity, page on-call and open a Jira incident for P1s, and route every other reply through approval before it posts back to Zendesk.'
-const REPLY_WORDS = REPLY.split(' ')
+  "On it — I’ll search your runbooks for each new ticket, classify its severity, page on-call and open a Jira incident for P1s, and route every other reply through approval before it posts back to Zendesk.";
+const REPLY_WORDS = REPLY.split(" ");
 
 /** Timeline beats (ms). */
 const T = {
@@ -189,50 +182,50 @@ const T = {
   /** Let the cycle loader + status phrase breathe before the answer types. */
   streamDelay: 1400,
   streamStep: 95,
-} as const
+} as const;
 /** Send → reply: how long Sim thinks. */
-const THINK_MS = 2200
+const THINK_MS = 2200;
 /**
  * How long after send the thinking loader appears - just past the box's
  * open-spring settle, so it never mounts under a still-growing (clipping) box
  * and starts its shape cycle from the top once visible.
  */
-const THINK_APPEAR = 900
+const THINK_APPEAR = 900;
 /** The composer rests for a beat before the prompt starts typing. */
-const TYPE_START_MS = 900
-const SEND_AT = TYPE_START_MS + TYPED.length * T.typeStep + 340
-const RESPOND_AT = SEND_AT + THINK_MS
-const STREAM_DONE_AT = RESPOND_AT + T.streamDelay + REPLY_WORDS.length * T.streamStep
+const TYPE_START_MS = 900;
+const SEND_AT = TYPE_START_MS + TYPED.length * T.typeStep + 340;
+const RESPOND_AT = SEND_AT + THINK_MS;
+const STREAM_DONE_AT = RESPOND_AT + T.streamDelay + REPLY_WORDS.length * T.streamStep;
 /** Hold on the finished reply before the chat hands over to the workflow. */
-const HANDOFF_AT = STREAM_DONE_AT + 1450
+const HANDOFF_AT = STREAM_DONE_AT + 1450;
 
 /**
  * The workflow act, in ms from its start: the canvas fades in, cards land one
  * by one, each landing selected, then the whole graph holds.
  */
-const WORKFLOW_FADE_MS = 500
+const WORKFLOW_FADE_MS = 500;
 /**
  * The composer group's fade-out. The workflow canvas mounts only after it, so
  * the two never share a frame - no canvas flashing in behind a still-visible
  * composer.
  */
-const COMPOSER_FADE_MS = 500
-const BUILD_START_MS = 600
-const BUILD_STEP_MS = 640
+const COMPOSER_FADE_MS = 500;
+const BUILD_START_MS = 600;
+const BUILD_STEP_MS = 640;
 /**
  * Cards on the canvas before Sim builds anything: the Start block every new
  * workflow opens with, which is why it leads `DEMO_BLOCKS`.
  */
-const PREBUILT_COUNT = 1
+const PREBUILT_COUNT = 1;
 /** The last card stays selected for a beat before the selection clears. */
-const BUILD_SETTLE_MS = 900
+const BUILD_SETTLE_MS = 900;
 /** The finished graph holds in view before the stage resets. */
-const BUILD_HOLD_MS = 2_000
+const BUILD_HOLD_MS = 2_000;
 
-type DemoPhase = 'chat' | 'handoff' | 'workflow' | 'reset'
+type DemoPhase = "chat" | "handoff" | "workflow" | "reset";
 
 interface DemoScript extends ScriptedWorkflowState {
-  builtCount: number
+  builtCount: number;
 }
 
 const IDLE_SCRIPT: DemoScript = {
@@ -241,182 +234,184 @@ const IDLE_SCRIPT: DemoScript = {
   isWorkflowRunning: false,
   runningId: null,
   completedIds: new Set(),
-}
+};
 
-const FINISHED_SCRIPT: DemoScript = { ...IDLE_SCRIPT, builtCount: DEMO_BLOCKS.length }
+const FINISHED_SCRIPT: DemoScript = { ...IDLE_SCRIPT, builtCount: DEMO_BLOCKS.length };
 
 interface ComposerPassProps {
   /** The composer's design width for this frame. */
-  width: number
+  width: number;
   /** Uniform scale the stage applies to the whole group. */
-  scale: number
+  scale: number;
   /** Called the instant the prompt is sent, when Sim starts to think. */
-  onSend: () => void
+  onSend: () => void;
   /** Called once the reply has finished and held, so the parent can hand over to the workflow. */
-  onReplyHold: () => void
+  onReplyHold: () => void;
 }
 
 /** The chat act. Mounted fresh per pass so every spring starts at rest. */
 function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) {
-  const birthWidth = Math.max(160, width - BIRTH_INSET)
-  const gooFilterId = `composer-goo-${useId().replace(/[^a-zA-Z0-9-]/g, '')}`
-  const blurRef = useRef<SVGFEGaussianBlurElement>(null)
-  const [ringRadius] = useState(hairlineRadius)
-  const barRef = useRef<HTMLDivElement>(null)
+  const birthWidth = Math.max(160, width - BIRTH_INSET);
+  const gooFilterId = `composer-goo-${useId().replace(/[^a-zA-Z0-9-]/g, "")}`;
+  const blurRef = useRef<SVGFEGaussianBlurElement>(null);
+  const [ringRadius] = useState(hairlineRadius);
+  const barRef = useRef<HTMLDivElement>(null);
 
-  const [prompt, setPrompt] = useState('')
-  const [isSending, setIsSending] = useState(false)
-  const [messages, setMessages] = useState<string[]>([])
-  const [thinking, setThinking] = useState(false)
-  const [replying, setReplying] = useState(false)
-  const [replyDone, setReplyDone] = useState(false)
-  const [streamed, setStreamed] = useState('')
-  const [opening, setOpening] = useState(false)
-  const [gooLive, setGooLive] = useState(false)
+  const [prompt, setPrompt] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [messages, setMessages] = useState<string[]>([]);
+  const [thinking, setThinking] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const [replyDone, setReplyDone] = useState(false);
+  const [streamed, setStreamed] = useState("");
+  const [opening, setOpening] = useState(false);
+  const [gooLive, setGooLive] = useState(false);
   /**
    * The timeline runs exactly once per pass. The parent recreates its callback
    * on every render (build steps, layout fits), so it is read through a ref:
    * a dependency on it would restart the whole timeline mid-flight - retyping
    * the prompt and re-firing the send against an already-open box.
    */
-  const onSendRef = useRef(onSend)
-  const onReplyHoldRef = useRef(onReplyHold)
+  const onSendRef = useRef(onSend);
+  const onReplyHoldRef = useRef(onReplyHold);
   useEffect(() => {
-    onSendRef.current = onSend
-    onReplyHoldRef.current = onReplyHold
-  }, [onSend, onReplyHold])
-  const [composerH, setComposerH] = useState(COMPOSER_BASE_HEIGHT)
-  const [chatH, setChatH] = useState(0)
-  const composerWrapRef = useRef<HTMLDivElement>(null)
-  const chatContentRef = useRef<HTMLDivElement>(null)
+    onSendRef.current = onSend;
+    onReplyHoldRef.current = onReplyHold;
+  }, [onSend, onReplyHold]);
+  const [composerH, setComposerH] = useState(COMPOSER_BASE_HEIGHT);
+  const [chatH, setChatH] = useState(0);
+  const composerWrapRef = useRef<HTMLDivElement>(null);
+  const chatContentRef = useRef<HTMLDivElement>(null);
 
-  const expanded = messages.length > 0
-
-  useEffect(() => {
-    const el = composerWrapRef.current?.firstElementChild as HTMLElement | null
-    if (!el) return
-    const measure = () => setComposerH(el.offsetHeight)
-    measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+  const expanded = messages.length > 0;
 
   useEffect(() => {
-    const el = chatContentRef.current
-    if (!el) return
-    const measure = () => setChatH(el.offsetHeight)
-    measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+    const el = composerWrapRef.current?.firstElementChild as HTMLElement | null;
+    if (!el) return;
+    const measure = () => setComposerH(el.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!opening) return
-    const timer = setTimeout(() => setOpening(false), OPEN_MS)
-    return () => clearTimeout(timer)
-  }, [opening])
+    const el = chatContentRef.current;
+    if (!el) return;
+    const measure = () => setChatH(el.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!opening) return
-    const blur = blurRef.current
-    if (!blur) return
-    setGooLive(true)
-    const start = performance.now()
+    if (!opening) return;
+    const timer = setTimeout(() => setOpening(false), OPEN_MS);
+    return () => clearTimeout(timer);
+  }, [opening]);
+
+  useEffect(() => {
+    if (!opening) return;
+    const blur = blurRef.current;
+    if (!blur) return;
+    setGooLive(true);
+    const start = performance.now();
     let frame = requestAnimationFrame(function tick(now) {
-      const t = Math.min((now - start) / GOO_MS, 1)
-      const goo = openGooAt(t)
-      blur.setAttribute('stdDeviation', String(goo))
-      const bar = barRef.current
+      const t = Math.min((now - start) / GOO_MS, 1);
+      const goo = openGooAt(t);
+      blur.setAttribute("stdDeviation", String(goo));
+      const bar = barRef.current;
       if (bar) {
-        bar.style.setProperty('--fillet', `${FILLET_REACH * goo}px`)
-        bar.style.opacity = String(Math.min(1, goo / BAR_FADE_SIGMA))
+        bar.style.setProperty("--fillet", `${FILLET_REACH * goo}px`);
+        bar.style.opacity = String(Math.min(1, goo / BAR_FADE_SIGMA));
       }
       if (goo === 0 && t > 0.5) {
-        setGooLive(false)
-        return
+        setGooLive(false);
+        return;
       }
-      frame = requestAnimationFrame(tick)
-    })
+      frame = requestAnimationFrame(tick);
+    });
     return () => {
-      cancelAnimationFrame(frame)
-      blur.setAttribute('stdDeviation', '0')
-      setGooLive(false)
-    }
-  }, [opening])
+      cancelAnimationFrame(frame);
+      blur.setAttribute("stdDeviation", "0");
+      setGooLive(false);
+    };
+  }, [opening]);
 
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms))
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
 
     for (let i = 0; i < TYPED.length; i++) {
-      at(TYPE_START_MS + i * T.typeStep, () => setPrompt(TYPED.slice(0, i + 1)))
+      at(TYPE_START_MS + i * T.typeStep, () => setPrompt(TYPED.slice(0, i + 1)));
     }
     at(SEND_AT, () => {
-      setPrompt('')
-      setMessages([TYPED])
-      setIsSending(true)
-      setOpening(true)
-      onSendRef.current()
-    })
-    at(SEND_AT + THINK_APPEAR, () => setThinking(true))
-    const streamStart = RESPOND_AT + T.streamDelay
+      setPrompt("");
+      setMessages([TYPED]);
+      setIsSending(true);
+      setOpening(true);
+      onSendRef.current();
+    });
+    at(SEND_AT + THINK_APPEAR, () => setThinking(true));
+    const streamStart = RESPOND_AT + T.streamDelay;
     at(streamStart, () => {
-      setThinking(false)
-      setReplying(true)
-    })
+      setThinking(false);
+      setReplying(true);
+    });
     for (let i = 1; i <= REPLY_WORDS.length; i++) {
-      at(streamStart + (i - 1) * T.streamStep, () => setStreamed(REPLY_WORDS.slice(0, i).join(' ')))
+      at(streamStart + (i - 1) * T.streamStep, () =>
+        setStreamed(REPLY_WORDS.slice(0, i).join(" ")),
+      );
     }
     at(STREAM_DONE_AT, () => {
-      setReplyDone(true)
-      setIsSending(false)
-    })
-    at(HANDOFF_AT, () => onReplyHoldRef.current())
+      setReplyDone(true);
+      setIsSending(false);
+    });
+    at(HANDOFF_AT, () => onReplyHoldRef.current());
 
     return () => {
-      for (const timer of timers) clearTimeout(timer)
-    }
-  }, [])
+      for (const timer of timers) clearTimeout(timer);
+    };
+  }, []);
 
   return (
-    <MotionConfig reducedMotion='user'>
-      <svg width='0' height='0' aria-hidden='true' className={cn('absolute', CHAT_SURFACE_VARS)}>
+    <MotionConfig reducedMotion="user">
+      <svg width="0" height="0" aria-hidden="true" className={cn("absolute", CHAT_SURFACE_VARS)}>
         <defs>
           {/* The studio's goo, crisp: blur the bodies, threshold them back
               into one swollen silhouette, then fill it in the surfaces' own
               colour and rim it with their hairline at one device pixel. */}
           <filter
             id={gooFilterId}
-            colorInterpolationFilters='sRGB'
-            x='-10%'
-            y='-10%'
-            width='120%'
-            height='120%'
+            colorInterpolationFilters="sRGB"
+            x="-10%"
+            y="-10%"
+            width="120%"
+            height="120%"
           >
-            <feGaussianBlur ref={blurRef} in='SourceGraphic' stdDeviation='0' result='blur' />
-            <feColorMatrix in='blur' type='matrix' values={GOO_THRESHOLD} result='body' />
-            <feMorphology in='body' operator='erode' radius={ringRadius} result='inner' />
-            <feComposite in='body' in2='inner' operator='out' result='rim' />
-            <feFlood style={{ floodColor: 'var(--chat-surface)' }} result='white' />
-            <feComposite in='white' in2='body' operator='in' result='fill' />
-            <feFlood style={{ floodColor: 'var(--border)' }} result='ink' />
-            <feComposite in='ink' in2='rim' operator='in' result='outline' />
+            <feGaussianBlur ref={blurRef} in="SourceGraphic" stdDeviation="0" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values={GOO_THRESHOLD} result="body" />
+            <feMorphology in="body" operator="erode" radius={ringRadius} result="inner" />
+            <feComposite in="body" in2="inner" operator="out" result="rim" />
+            <feFlood style={{ floodColor: "var(--chat-surface)" }} result="white" />
+            <feComposite in="white" in2="body" operator="in" result="fill" />
+            <feFlood style={{ floodColor: "var(--border)" }} result="ink" />
+            <feComposite in="ink" in2="rim" operator="in" result="outline" />
             <feMerge>
-              <feMergeNode in='fill' />
-              <feMergeNode in='outline' />
+              <feMergeNode in="fill" />
+              <feMergeNode in="outline" />
             </feMerge>
           </filter>
         </defs>
       </svg>
       <div
-        className={cn('relative', CHAT_SURFACE_VARS)}
-        style={{ width, transform: `scale(${scale})`, transformOrigin: 'center' }}
+        className={cn("relative", CHAT_SURFACE_VARS)}
+        style={{ width, transform: `scale(${scale})`, transformOrigin: "center" }}
       >
-        <div className='relative isolate w-full'>
+        <div className="relative isolate w-full">
           {/* CHAT BOX - born tucked behind the composer's top edge, it rises
               clear. For the opening beat its chrome is the goo body beneath
               it (see GOO) and its own is transparent; the two coincide exactly
@@ -424,7 +419,7 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
               the swap is never seen. */}
           <motion.div
             initial={false}
-            className='relative z-20'
+            className="relative z-20"
             animate={{
               y: expanded ? 0 : BIRTH_Y,
               marginBottom: expanded ? GAP : 0,
@@ -447,25 +442,25 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
                 height: opening ? OPEN_SPRING : GROW_SPRING,
               }}
               className={cn(
-                'mx-auto flex flex-col overflow-hidden border',
+                "mx-auto flex flex-col overflow-hidden border",
                 gooLive
-                  ? 'border-transparent bg-transparent'
-                  : 'border-[var(--border)] bg-[var(--chat-surface)]'
+                  ? "border-transparent bg-transparent"
+                  : "border-[var(--border)] bg-[var(--chat-surface)]",
               )}
               style={{ borderRadius: BOX_RADIUS }}
             >
               <div
                 ref={chatContentRef}
-                className='box-border flex flex-col gap-4 p-4'
+                className="box-border flex flex-col gap-4 p-4"
                 style={{ width }}
               >
                 {messages.map((text) => (
-                  <div key={text} className='flex justify-end'>
+                  <div key={text} className="flex justify-end">
                     <motion.div
-                      initial={{ opacity: 0, y: 10, filter: 'blur(3px)' }}
-                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      initial={{ opacity: 0, y: 10, filter: "blur(3px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                       transition={{ duration: 0.4, delay: 0.15, ease: EASE_OUT_STRONG }}
-                      className='max-w-[70%] overflow-hidden bg-[var(--surface-5)] px-3.5 py-2 text-[15px] text-[var(--text-primary)] leading-[22px]'
+                      className="max-w-[70%] overflow-hidden bg-[var(--surface-5)] px-3.5 py-2 text-[15px] text-[var(--text-primary)] leading-[22px]"
                       style={{ borderRadius: BUBBLE_RADIUS }}
                     >
                       {text}
@@ -476,55 +471,55 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
                   <AnimatePresence initial={false}>
                     {(thinking || replying) && (
                       <motion.div
-                        key='answer'
+                        key="answer"
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, transition: { duration: 0.25, ease: EASE_OUT_STRONG } }}
                         transition={{ duration: 0.3, ease: EASE_OUT_STRONG }}
-                        className='relative z-[2] flex min-h-[24px] items-start gap-2.5'
+                        className="relative z-[2] flex min-h-[24px] items-start gap-2.5"
                       >
                         {/* ONE persistent cycle loader from thinking through the
                             reply; it hands off to the Blimp once the answer completes. */}
                         <span
-                          className='relative shrink-0'
+                          className="relative shrink-0"
                           style={{ width: LOADER_SIZE, height: LOADER_SIZE }}
                         >
-                          <AnimatePresence mode='popLayout' initial={false}>
+                          <AnimatePresence mode="popLayout" initial={false}>
                             {replyDone ? (
                               <motion.span
-                                key='blimp'
-                                initial={{ opacity: 0, scale: 0.25, filter: 'blur(4px)' }}
-                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                key="blimp"
+                                initial={{ opacity: 0, scale: 0.25, filter: "blur(4px)" }}
+                                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                                 transition={MORPH_SPRING}
-                                className='absolute inset-0 grid place-items-center'
+                                className="absolute inset-0 grid place-items-center"
                               >
                                 <Blimp
-                                  className='text-[var(--text-icon)]'
+                                  className="text-[var(--text-icon)]"
                                   style={{ width: LOADER_SIZE, height: LOADER_SIZE }}
                                 />
                               </motion.span>
                             ) : (
                               <motion.span
-                                key='goo'
-                                exit={{ opacity: 0, filter: 'blur(3px)' }}
+                                key="goo"
+                                exit={{ opacity: 0, filter: "blur(3px)" }}
                                 transition={{ duration: 0.3, ease: EASE_OUT_STRONG }}
-                                className='absolute inset-0'
+                                className="absolute inset-0"
                               >
-                                <ThinkingLoader size={LOADER_SIZE} startVariant='corners' />
+                                <ThinkingLoader size={LOADER_SIZE} startVariant="corners" />
                               </motion.span>
                             )}
                           </AnimatePresence>
                         </span>
-                        <span className='relative z-[2] block min-h-[24px] min-w-0 flex-1 text-[15px] leading-[24px]'>
+                        <span className="relative z-[2] block min-h-[24px] min-w-0 flex-1 text-[15px] leading-[24px]">
                           {streamed.length > 0 ? (
-                            <span className='block text-[var(--text-primary)]'>{streamed}</span>
+                            <span className="block text-[var(--text-primary)]">{streamed}</span>
                           ) : (
                             <ThinkingLoader
                               size={LOADER_SIZE}
-                              startVariant='corners'
+                              startVariant="corners"
                               phase
                               labelRatio={THINKING_LABEL_RATIO}
-                              className='h-[24px] [&>svg]:hidden [&_*]:leading-[24px]'
+                              className="h-[24px] [&>svg]:hidden [&_*]:leading-[24px]"
                             />
                           )}
                         </span>
@@ -539,7 +534,7 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
           {/* COMPOSER - the product's own chrome, unchanged through the
               emergence; its resting shadow-xs fades once the conversation
               opens, as in the product. */}
-          <div className='relative'>
+          <div className="relative">
             <motion.div
               ref={composerWrapRef}
               initial={false}
@@ -554,23 +549,23 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
                   ease: opening ? EASE_EXIT : EASE_ENTRANCE,
                 },
               }}
-              className='relative z-30 overflow-hidden rounded-2xl [&>div]:shadow-none'
+              className="relative z-30 overflow-hidden rounded-2xl [&>div]:shadow-none"
             >
               <DemoComposer prompt={prompt} isSending={isSending} isInitialView={!expanded} />
               {opening && (
                 <motion.div
-                  aria-hidden='true'
-                  initial={{ width: birthWidth, x: '-50%' }}
-                  animate={{ width: expanded ? width : birthWidth, x: '-50%' }}
+                  aria-hidden="true"
+                  initial={{ width: birthWidth, x: "-50%" }}
+                  animate={{ width: expanded ? width : birthWidth, x: "-50%" }}
                   transition={{ width: WIDTH_OPEN }}
-                  className='pointer-events-none absolute top-0 left-1/2 z-10 h-px'
+                  className="pointer-events-none absolute top-0 left-1/2 z-10 h-px"
                 >
                   <div
                     ref={barRef}
-                    className='absolute inset-y-0 bg-[var(--chat-surface)] opacity-0'
+                    className="absolute inset-y-0 bg-[var(--chat-surface)] opacity-0"
                     style={{
-                      left: 'calc(-1 * var(--fillet, 0px))',
-                      right: 'calc(-1 * var(--fillet, 0px))',
+                      left: "calc(-1 * var(--fillet, 0px))",
+                      right: "calc(-1 * var(--fillet, 0px))",
                     }}
                   />
                 </motion.div>
@@ -589,7 +584,7 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
               visible surfaces while the composer wrap's height springs. */}
           {opening && (
             <div
-              className='pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-start'
+              className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-start"
               style={{ filter: `url(#${gooFilterId})` }}
             >
               <motion.div
@@ -606,11 +601,11 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
                   marginBottom: OPEN_SPRING,
                   width: WIDTH_OPEN,
                 }}
-                className='bg-[var(--chat-surface)]'
+                className="bg-[var(--chat-surface)]"
                 style={{ borderRadius: BOX_RADIUS }}
               />
               <div
-                className='bg-[var(--chat-surface)]'
+                className="bg-[var(--chat-surface)]"
                 style={{
                   width: width - 2 * GHOST_INSET.x,
                   height: composerH - 2 * GHOST_INSET.y,
@@ -623,7 +618,7 @@ function ComposerPass({ width, scale, onSend, onReplyHold }: ComposerPassProps) 
         </div>
       </div>
     </MotionConfig>
-  )
+  );
 }
 
 interface ComposerLoopProps {
@@ -631,13 +626,13 @@ interface ComposerLoopProps {
    * Px at the top of the frame that copy overlays, mirrored at the bottom so
    * the group stays centred: the height fit subtracts both.
    */
-  clearance?: number
+  clearance?: number;
   /**
    * Reports the act the scene is in - the prompt being described, Sim
    * planning its reply, the workflow being built - so the section's caption
    * can follow it.
    */
-  onBeat?: (beat: ProductDemoBeatId) => void
+  onBeat?: (beat: ProductDemoBeatId) => void;
 }
 
 /**
@@ -647,18 +642,18 @@ interface ComposerLoopProps {
  * view. Decorative and `aria-hidden`; nothing here is interactive.
  */
 export function ComposerLoop({ clearance = 0, onBeat }: ComposerLoopProps) {
-  const reducedMotion = usePrefersReducedMotion()
+  const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
-    if (reducedMotion) onBeat?.('watch')
-  }, [reducedMotion, onBeat])
+    if (reducedMotion) onBeat?.("watch");
+  }, [reducedMotion, onBeat]);
 
   if (reducedMotion) {
     return (
       <div
-        aria-hidden='true'
+        aria-hidden="true"
         inert
-        className='pointer-events-none absolute inset-0 overflow-hidden'
+        className="pointer-events-none absolute inset-0 overflow-hidden"
       >
         <ProductionWorkflowStage
           builtCount={FINISHED_SCRIPT.builtCount}
@@ -669,155 +664,155 @@ export function ComposerLoop({ clearance = 0, onBeat }: ComposerLoopProps) {
           viewportInset={{ top: clearance, bottom: clearance }}
         />
       </div>
-    )
+    );
   }
 
-  return <AnimatedComposerLoop clearance={clearance} onBeat={onBeat} />
+  return <AnimatedComposerLoop clearance={clearance} onBeat={onBeat} />;
 }
 
 /** Mounted only while motion is allowed, so preference changes cancel every pending act. */
 function AnimatedComposerLoop({ clearance = 0, onBeat }: ComposerLoopProps) {
-  const stageRef = useRef<HTMLDivElement>(null)
-  const onBeatRef = useRef(onBeat)
-  const [layout, setLayout] = useState({ width: WIDTH, scale: 1, workflow: true })
-  const [visible, setVisible] = useState(false)
-  const [passKey, setPassKey] = useState(0)
-  const [phase, setPhase] = useState<DemoPhase>('chat')
-  const [script, setScript] = useState<DemoScript>(IDLE_SCRIPT)
+  const stageRef = useRef<HTMLDivElement>(null);
+  const onBeatRef = useRef(onBeat);
+  const [layout, setLayout] = useState({ width: WIDTH, scale: 1, workflow: true });
+  const [visible, setVisible] = useState(false);
+  const [passKey, setPassKey] = useState(0);
+  const [phase, setPhase] = useState<DemoPhase>("chat");
+  const [script, setScript] = useState<DemoScript>(IDLE_SCRIPT);
 
   useEffect(() => {
-    onBeatRef.current = onBeat
-  }, [onBeat])
+    onBeatRef.current = onBeat;
+  }, [onBeat]);
 
   useEffect(() => {
-    if (phase === 'chat') onBeatRef.current?.('read')
-    else if (phase === 'workflow') onBeatRef.current?.('watch')
-  }, [phase])
+    if (phase === "chat") onBeatRef.current?.("read");
+    else if (phase === "workflow") onBeatRef.current?.("watch");
+  }, [phase]);
 
   useEffect(() => {
-    if (phase !== 'workflow') return
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms))
+    if (phase !== "workflow") return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
 
-    setScript({ ...IDLE_SCRIPT, builtCount: PREBUILT_COUNT, selectedId: DEMO_BLOCKS[0].id })
+    setScript({ ...IDLE_SCRIPT, builtCount: PREBUILT_COUNT, selectedId: DEMO_BLOCKS[0].id });
     DEMO_BLOCKS.slice(PREBUILT_COUNT).forEach((block, index) => {
       at(BUILD_START_MS + index * BUILD_STEP_MS, () =>
         setScript((current) => ({
           ...current,
           builtCount: PREBUILT_COUNT + index + 1,
           selectedId: block.id,
-        }))
-      )
-    })
-    const buildEnd = BUILD_START_MS + (DEMO_BLOCKS.length - PREBUILT_COUNT) * BUILD_STEP_MS
-    const settled = buildEnd + BUILD_SETTLE_MS
-    at(settled, () => setScript((current) => ({ ...current, selectedId: null })))
-    at(settled + BUILD_HOLD_MS, () => setPhase('reset'))
+        })),
+      );
+    });
+    const buildEnd = BUILD_START_MS + (DEMO_BLOCKS.length - PREBUILT_COUNT) * BUILD_STEP_MS;
+    const settled = buildEnd + BUILD_SETTLE_MS;
+    at(settled, () => setScript((current) => ({ ...current, selectedId: null })));
+    at(settled + BUILD_HOLD_MS, () => setPhase("reset"));
 
     return () => {
-      for (const timer of timers) clearTimeout(timer)
-    }
-  }, [phase])
+      for (const timer of timers) clearTimeout(timer);
+    };
+  }, [phase]);
 
   useEffect(() => {
-    if (phase !== 'handoff') return
-    const timer = setTimeout(() => setPhase('workflow'), COMPOSER_FADE_MS)
-    return () => clearTimeout(timer)
-  }, [phase])
+    if (phase !== "handoff") return;
+    const timer = setTimeout(() => setPhase("workflow"), COMPOSER_FADE_MS);
+    return () => clearTimeout(timer);
+  }, [phase]);
 
   useEffect(() => {
-    if (phase !== 'reset') return
+    if (phase !== "reset") return;
     const timer = setTimeout(() => {
-      setScript(IDLE_SCRIPT)
-      setPassKey((key) => key + 1)
-      setPhase('chat')
-    }, WORKFLOW_FADE_MS + 100)
-    return () => clearTimeout(timer)
-  }, [phase])
+      setScript(IDLE_SCRIPT);
+      setPassKey((key) => key + 1);
+      setPhase("chat");
+    }, WORKFLOW_FADE_MS + 100);
+    return () => clearTimeout(timer);
+  }, [phase]);
 
   useEffect(() => {
-    const stage = stageRef.current
-    if (!stage) return
+    const stage = stageRef.current;
+    if (!stage) return;
 
     const fitStage = () => {
-      const frame = stage.clientWidth
-      const room = stage.clientHeight - 2 * clearance
-      const byHeight = stage.clientHeight > 0 ? Math.max(0, room) / GROUP_FIT_HEIGHT : MAX_SCALE
-      const workflow = frame >= WORKFLOW_MIN_FRAME
+      const frame = stage.clientWidth;
+      const room = stage.clientHeight - 2 * clearance;
+      const byHeight = stage.clientHeight > 0 ? Math.max(0, room) / GROUP_FIT_HEIGHT : MAX_SCALE;
+      const workflow = frame >= WORKFLOW_MIN_FRAME;
       if (frame < NARROW_FRAME) {
-        const width = Math.max(MIN_WIDTH, Math.min(WIDTH, frame - FRAME_INSET * 2))
-        const scale = Math.min(1, Math.max(MIN_SCALE, byHeight))
+        const width = Math.max(MIN_WIDTH, Math.min(WIDTH, frame - FRAME_INSET * 2));
+        const scale = Math.min(1, Math.max(MIN_SCALE, byHeight));
         setLayout((current) =>
           current.width === width && current.scale === scale && current.workflow === workflow
             ? current
-            : { width, scale, workflow }
-        )
-        return
+            : { width, scale, workflow },
+        );
+        return;
       }
-      const byWidth = (frame * STAGE_FILL) / WIDTH
-      const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(byWidth, byHeight)))
+      const byWidth = (frame * STAGE_FILL) / WIDTH;
+      const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(byWidth, byHeight)));
       setLayout((current) =>
         current.width === WIDTH && current.scale === scale && current.workflow === workflow
           ? current
-          : { width: WIDTH, scale, workflow }
-      )
-    }
-    fitStage()
-    const resize = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(fitStage)
-    resize?.observe(stage)
+          : { width: WIDTH, scale, workflow },
+      );
+    };
+    fitStage();
+    const resize = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(fitStage);
+    resize?.observe(stage);
 
-    let intersection: IntersectionObserver | undefined
-    if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true)
+    let intersection: IntersectionObserver | undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
     } else {
       intersection = new IntersectionObserver(([entry]) => {
-        setVisible(entry.isIntersecting)
+        setVisible(entry.isIntersecting);
         if (!entry.isIntersecting) {
-          setScript(IDLE_SCRIPT)
-          setPhase('chat')
-          setPassKey((key) => key + 1)
+          setScript(IDLE_SCRIPT);
+          setPhase("chat");
+          setPassKey((key) => key + 1);
         }
-      })
-      intersection.observe(stage)
+      });
+      intersection.observe(stage);
     }
 
     return () => {
-      resize?.disconnect()
-      intersection?.disconnect()
-    }
-  }, [clearance])
+      resize?.disconnect();
+      intersection?.disconnect();
+    };
+  }, [clearance]);
 
   return (
     <div
       ref={stageRef}
-      aria-hidden='true'
+      aria-hidden="true"
       className={cn(
-        'sim-product-preview absolute inset-0 grid place-items-center overflow-hidden',
-        'pointer-events-none'
+        "sim-product-preview absolute inset-0 grid place-items-center overflow-hidden",
+        "pointer-events-none",
       )}
-      data-product-preview=''
+      data-product-preview=""
     >
       {visible && (
         <>
           <div
             className={cn(
-              'col-start-1 row-start-1 transition-[opacity,transform] duration-500 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]',
-              phase === 'chat' ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'
+              "col-start-1 row-start-1 transition-[opacity,transform] duration-500 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
+              phase === "chat" ? "scale-100 opacity-100" : "scale-[0.97] opacity-0",
             )}
           >
             <ComposerPass
               key={passKey}
               width={layout.width}
               scale={layout.scale}
-              onSend={() => onBeatRef.current?.('confirm')}
-              onReplyHold={() => setPhase(layout.workflow ? 'handoff' : 'reset')}
+              onSend={() => onBeatRef.current?.("confirm")}
+              onReplyHold={() => setPhase(layout.workflow ? "handoff" : "reset")}
             />
           </div>
-          {(phase === 'workflow' || phase === 'reset') && (
+          {(phase === "workflow" || phase === "reset") && (
             <div
               className={cn(
-                'absolute inset-0 animate-[hero-stage-fade_500ms_cubic-bezier(0.23,1,0.32,1)_both] transition-opacity duration-500',
-                phase === 'workflow' ? 'opacity-100' : 'opacity-0'
+                "absolute inset-0 animate-[hero-stage-fade_500ms_cubic-bezier(0.23,1,0.32,1)_both] transition-opacity duration-500",
+                phase === "workflow" ? "opacity-100" : "opacity-0",
               )}
             >
               <ProductionWorkflowStage
@@ -833,5 +828,5 @@ function AnimatedComposerLoop({ clearance = 0, onBeat }: ComposerLoopProps) {
         </>
       )}
     </div>
-  )
+  );
 }

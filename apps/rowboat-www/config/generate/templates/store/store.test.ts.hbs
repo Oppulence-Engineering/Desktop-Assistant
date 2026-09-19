@@ -1,0 +1,16 @@
+import { describe, expect, it } from "vitest";
+
+import { {{storeHookName}} } from "./store";
+import { {{schemaName}} } from "./{{name}}.schema";
+
+describe("{{storeHookName}}", () => {
+  it("starts from a Zod-validated snapshot", () => {
+    const { reset, ...snapshot } = {{storeHookName}}.getState();
+    expect(typeof reset).toBe("function");
+    expect({{schemaName}}.safeParse(snapshot).success).toBe(true);
+    reset();
+    const next = {{storeHookName}}.getState();
+    const { reset: _reset, ...nextSnapshot } = next;
+    expect({{schemaName}}.safeParse(nextSnapshot).success).toBe(true);
+  });
+});

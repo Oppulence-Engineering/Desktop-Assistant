@@ -5,10 +5,7 @@ import { JsonLd, RelatedPages } from "../../marketing-primitives";
 import { breadcrumbJsonLd, faqJsonLd } from "../../metadata";
 import { SimLandingFaq } from "../landing-faq";
 import { LANDING_CONTENT_WIDTH, LANDING_GUTTER, HOME_INSET } from "../tokens";
-import {
-  SimSolutionsProductPage,
-  capabilityToSolutionsConfig,
-} from "./solutions-product";
+import { SimSolutionsProductPage, capabilityToSolutionsConfig } from "./solutions-product";
 import { SimPageFooterRule } from "./sim-subpage-hero";
 
 const kindCrumb: Record<CapabilityPage["kind"], { label: string; href: string }> = {
@@ -50,7 +47,11 @@ export function SimCapabilityPage({ page }: { page: CapabilityPage }) {
                 </section>
               ) : null}
               {page.related.length > 0 ? (
-                <section className={page.faqs.length > 0 ? "border-[var(--border)] border-t pt-12 max-sm:pt-8" : ""}>
+                <section
+                  className={
+                    page.faqs.length > 0 ? "border-[var(--border)] border-t pt-12 max-sm:pt-8" : ""
+                  }
+                >
                   <RelatedPages items={page.related} />
                 </section>
               ) : null}

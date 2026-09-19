@@ -71,8 +71,12 @@ export function SimChangelogPage({
                       </time>
                     ) : null}
                   </div>
-                  <h2 className="text-[18px] text-[var(--text-primary)] leading-[1.2]">{entry.title}</h2>
-                  <p className="text-[15px] text-[var(--text-secondary)] leading-[1.55]">{entry.body}</p>
+                  <h2 className="text-[18px] text-[var(--text-primary)] leading-[1.2]">
+                    {entry.title}
+                  </h2>
+                  <p className="text-[15px] text-[var(--text-secondary)] leading-[1.55]">
+                    {entry.body}
+                  </p>
                   {entry.url ? (
                     <a
                       className="text-[14px] text-[var(--text-body)] underline-offset-4 hover:underline"

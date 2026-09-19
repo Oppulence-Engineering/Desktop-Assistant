@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   createAction: vi.fn(),
 }));
 
-vi.mock("@/lib/revenue", () => ({
+vi.mock("@/lib/revenue/revenue", () => ({
   createAction: mocks.createAction,
 }));
 

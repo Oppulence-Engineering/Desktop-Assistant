@@ -3,7 +3,11 @@ import { cn } from "@/lib/sim/cn";
 import { EdgeFade } from "./edge-fade";
 
 const blocks = [
-  { title: "Read mail", body: "Find sentences that look like promises.", x: "left-[5px] top-[185px]" },
+  {
+    title: "Read mail",
+    body: "Find sentences that look like promises.",
+    x: "left-[5px] top-[185px]",
+  },
   {
     title: "Confirm rows",
     body: "Keep the ones that count. Drop the rest.",

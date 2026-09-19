@@ -5,10 +5,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/sim/cn";
 
 import { HOME_TYPE } from "./tokens";
-import {
-  PRODUCT_DEMO_BEATS,
-  type ProductDemoBeatId,
-} from "./product-demo-beats";
+import { PRODUCT_DEMO_BEATS, type ProductDemoBeatId } from "./product-demo-beats";
 import { useProductDemoBeat } from "./product-demo-context";
 
 const EXIT_MS = 320;

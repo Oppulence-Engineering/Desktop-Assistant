@@ -4,11 +4,11 @@ Each entry removed from `eslint.config.mjs` `legacy.*` arrays is a completed mig
 
 ## `unvalidatedJson`
 
-| File                                             | Migration                          |
-| ------------------------------------------------ | ---------------------------------- |
-| `lib/revenue.ts`                                 | Use Orval client + Zod parse       |
-| `components/app-shell.tsx`                       | Generated clients for agents/tasks |
-| `app/(product)/app/product-dashboard-client.tsx` | Shrink as routes extract           |
+| File                                                                                  | Migration                          |
+| ------------------------------------------------------------------------------------- | ---------------------------------- |
+| `lib/revenue/revenue.ts`                                                              | Use Orval client + Zod parse       |
+| `components/features/dashboard/app-shell/app-shell.tsx`                               | Generated clients for agents/tasks |
+| `components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx` | Shrink as routes extract           |
 
 ## `directFetch`
 

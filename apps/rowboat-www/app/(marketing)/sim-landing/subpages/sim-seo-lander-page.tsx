@@ -101,12 +101,17 @@ export function SimSeoLanderPage({ page, lander }: { page: MarketingPage; lander
             </h2>
             <div className="grid gap-4 md:grid-cols-3">
               {lander.distinctions.map((item) => (
-                <article className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")} key={item.title}>
+                <article
+                  className={cn(SIM_SURFACE_CARD, "flex flex-col gap-2 p-5")}
+                  key={item.title}
+                >
                   <p className="text-[11px] text-[var(--text-muted)] uppercase tracking-[0.08em]">
                     {item.chip}
                   </p>
                   <h3 className="text-[16px] text-[var(--text-primary)]">{item.title}</h3>
-                  <p className="text-[14px] text-[var(--text-secondary)] leading-[1.5]">{item.body}</p>
+                  <p className="text-[14px] text-[var(--text-secondary)] leading-[1.5]">
+                    {item.body}
+                  </p>
                 </article>
               ))}
             </div>
