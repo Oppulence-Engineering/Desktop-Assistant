@@ -950,6 +950,7 @@ export function RelationshipsView({
       {detail ? (
         <RelationshipSheet
           id={detail}
+          seed={companies.find((relationship) => relationship.id === detail)}
           position={Math.max(
             1,
             companies.findIndex((relationship) => relationship.id === detail) + 1,
@@ -1565,8 +1566,9 @@ function ImportedTranscriptPublisher({
   );
 }
 
-function RelationshipSheet({
+export function RelationshipSheet({
   id,
+  seed,
   position,
   total,
   onClose,
@@ -1574,6 +1576,7 @@ function RelationshipSheet({
   onChanged,
 }: {
   id: string;
+  seed?: RevenueRelationship;
   position: number;
   total: number;
   onClose: () => void;
@@ -1630,11 +1633,13 @@ function RelationshipSheet({
     } catch (error) {
       const message = errMessage(error, "Could not load the relationship.");
       setLoadError(message);
-      onError(message);
+      // Keep the failure in the sheet. A missing optional pane used to
+      // paint the page-level "Action needed" banner and leave this
+      // surface stuck on "Loading living state…".
     } finally {
       setLoading(false);
     }
-  }, [id, onError]);
+  }, [id]);
 
   React.useEffect(() => {
     void load();
@@ -1693,7 +1698,7 @@ function RelationshipSheet({
       >
         <SheetHeader className="min-h-12 flex-row items-center border-b border-border py-2 pl-14 pr-3">
           <SheetTitle className="text-xs font-normal text-primary/55">
-            {data ? `${position} of ${total} in All companies` : "Company"}
+            {data || seed ? `${position} of ${total} in All companies` : "Company"}
           </SheetTitle>
           <SheetDescription className="sr-only">
             {data?.relationship.primaryEmail}
@@ -1703,20 +1708,32 @@ function RelationshipSheet({
             Ask Oppulence
           </Badge>
         </SheetHeader>
-        {!loading && loadError ? (
+        {!data ? (
           <div className="flex flex-col gap-3 px-4 py-6">
-            <p className="text-sm text-destructive">{loadError}</p>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" type="button" variant="outline" onClick={() => void load()}>
-                Retry
-              </Button>
-              <Button size="sm" type="button" variant="ghost" onClick={onClose}>
-                Close
-              </Button>
-            </div>
+            {seed ? (
+              <div>
+                <h2 className="truncate text-lg font-semibold text-primary">{companyName(seed)}</h2>
+                <p className="truncate text-xs text-primary/45">
+                  {seed.accountDomain || seed.primaryEmail || "Company"}
+                </p>
+              </div>
+            ) : null}
+            {loadError && !loading ? (
+              <>
+                <p className="text-sm text-destructive">{loadError}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" type="button" variant="outline" onClick={() => void load()}>
+                    Retry
+                  </Button>
+                  <Button size="sm" type="button" variant="ghost" onClick={onClose}>
+                    Close
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-primary/50">Loading living state…</p>
+            )}
           </div>
-        ) : loading || !data ? (
-          <p className="px-4 py-6 text-sm text-primary/50">Loading living state…</p>
         ) : (
           <div className="grid min-h-0 flex-1 md:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="border-b border-border px-4 py-5 md:border-r md:border-b-0">
