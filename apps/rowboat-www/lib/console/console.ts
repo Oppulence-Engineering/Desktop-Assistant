@@ -29,7 +29,6 @@ import {
 
 export {
   ConsoleAPIError,
-  isConsoleRouteUnavailable,
   type ConsolePreferences,
   type ConsolePreferencesPatch,
   type ConsoleResource,

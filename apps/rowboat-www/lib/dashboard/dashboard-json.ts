@@ -23,7 +23,7 @@ type DashboardJsonOptions = RequestInit & {
 };
 
 /** Backend features that may be absent (404) or unreachable during local dev (502/503). */
-export function isOptionalDashboardFailure(status: number): boolean {
+function isOptionalDashboardFailure(status: number): boolean {
   return status === 404 || status === 502 || status === 503;
 }
 

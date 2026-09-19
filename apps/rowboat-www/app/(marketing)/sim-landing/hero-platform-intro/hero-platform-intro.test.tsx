@@ -4,7 +4,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { HeroPlatformIntro } from "./hero-platform-intro/hero-platform-intro";
+import { HeroPlatformIntro } from "./hero-platform-intro";
 
 let root: Root;
 let host: HTMLDivElement;

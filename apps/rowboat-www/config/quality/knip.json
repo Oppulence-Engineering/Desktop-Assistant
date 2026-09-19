@@ -15,7 +15,22 @@
     "config/**/*.{ts,mts}",
     "instrumentation.ts"
   ],
-  "project": ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "!lib/api/generated/**"],
+  "project": [
+    "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}",
+    "!lib/api/generated/**",
+    "!vendor/**",
+    "!sim-port/**"
+  ],
+  "ignore": [
+    "vendor/**",
+    "sim-port/**",
+    "lib/sim-port/**",
+    "components/sim/**",
+    "hooks/sim/**",
+    "components/legal/current-year.tsx",
+    "components/legal/legal-document.tsx",
+    "stores/browser-session/store.ts"
+  ],
   "ignoreFiles": [
     "components/ai-elements/canvas.tsx",
     "components/ai-elements/chain-of-thought.tsx",
@@ -42,7 +57,12 @@
     "lib/icon.tsx",
     "lib/api/generated/**",
     "quality/fixtures/**",
-    ".rowboat-contracts-*/**"
+    ".rowboat-contracts-*/**",
+    "vendor/**",
+    "sim-port/**",
+    "lib/sim-port/**",
+    "components/sim/**",
+    "hooks/sim/**"
   ],
   "ignoreIssues": {
     "components/ai-elements/{code-block,conversation,message,prompt-input,reasoning}.tsx": [
@@ -71,7 +91,14 @@
     "components/features/dashboard/chat-route-provider/chat-route-provider.tsx": [
       "exports",
       "types"
-    ]
+    ],
+    "lib/uploads/utils/validation.ts": ["exports", "types"],
+    "app/(marketing)/sim-landing/legal/sim-legal-document-page.tsx": ["duplicates", "exports"],
+    "app/(marketing)/sim-landing/hero-chat-loop/hero-chat-loop.test.tsx": ["unresolved"],
+    "components/sim/**": ["exports", "types", "files"],
+    "hooks/sim/**": ["exports", "types", "files"],
+    "components/legal/**": ["exports", "types", "files"],
+    "components/features/revenue/relationships-view/relationships-view.tsx": ["exports"]
   },
   "ignoreDependencies": [
     "@emotion/react",

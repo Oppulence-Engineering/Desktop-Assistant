@@ -5,7 +5,7 @@
  * directly and must not pull `client-only` into the RSC graph.
  */
 
-export const DASHBOARD_REQUEST_TIMEOUT_MS = 30_000;
+const DASHBOARD_REQUEST_TIMEOUT_MS = 30_000;
 
 export function toDashboardAPIPath(path: string): string {
   if (path.startsWith("/api/")) return path;

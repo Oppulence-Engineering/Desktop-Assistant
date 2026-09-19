@@ -4,7 +4,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { HeroChatLoop, type HeroChatPhase } from "./hero-chat-loop/hero-chat-loop";
+import { HeroChatLoop, type HeroChatPhase } from "./hero-chat-loop";
 import type { AgentGroupItem } from "@/sim-port/workspace/home/components/message-content/components";
 import { ToolCallStatus } from "@/sim-port/workspace/home/types";
 
