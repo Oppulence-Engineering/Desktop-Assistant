@@ -138,29 +138,10 @@ export const createRevenueAction = async (
   createRevenueActionBody: CreateRevenueActionBody,
   options?: RequestInit,
 ): Promise<createRevenueActionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getCreateRevenueActionUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(createRevenueActionBody),
   });
 
@@ -273,29 +254,10 @@ export const approveRevenueAction = async (
   approveRevenueActionBody?: ApproveRevenueActionBody,
   options?: RequestInit,
 ): Promise<approveRevenueActionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getApproveRevenueActionUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(approveRevenueActionBody),
   });
 
@@ -395,29 +357,10 @@ export const dismissRevenueAction = async (
   dismissRevenueActionBody: DismissRevenueActionBody,
   options?: RequestInit,
 ): Promise<dismissRevenueActionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getDismissRevenueActionUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(dismissRevenueActionBody),
   });
 
@@ -480,29 +423,10 @@ export const editRevenueAction = async (
   editRevenueActionBody: EditRevenueActionBody,
   options?: RequestInit,
 ): Promise<editRevenueActionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getEditRevenueActionUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(editRevenueActionBody),
   });
 
@@ -679,29 +603,10 @@ export const recordRevenueActionOutcome = async (
   recordRevenueActionOutcomeBody: RecordRevenueActionOutcomeBody,
   options?: RequestInit,
 ): Promise<recordRevenueActionOutcomeResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRecordRevenueActionOutcomeUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(recordRevenueActionOutcomeBody),
   });
 
@@ -756,29 +661,10 @@ export const rejectRevenueAction = async (
   rejectRevenueActionBody: RejectRevenueActionBody,
   options?: RequestInit,
 ): Promise<rejectRevenueActionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getRejectRevenueActionUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(rejectRevenueActionBody),
   });
 
@@ -833,29 +719,10 @@ export const snoozeRevenueAction = async (
   snoozeRevenueActionBody: SnoozeRevenueActionBody,
   options?: RequestInit,
 ): Promise<snoozeRevenueActionResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getSnoozeRevenueActionUrl(actionId), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(snoozeRevenueActionBody),
   });
 
@@ -1100,29 +967,10 @@ export const startRevenueLeakScan = async (
   startRevenueLeakScanBody?: StartRevenueLeakScanBody,
   options?: RequestInit,
 ): Promise<startRevenueLeakScanResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getStartRevenueLeakScanUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(startRevenueLeakScanBody),
   });
 
@@ -1410,29 +1258,10 @@ export const linkRevenueWorkspace = async (
   linkRevenueWorkspaceBody: LinkRevenueWorkspaceBody,
   options?: RequestInit,
 ): Promise<linkRevenueWorkspaceResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getLinkRevenueWorkspaceUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(linkRevenueWorkspaceBody),
   });
 

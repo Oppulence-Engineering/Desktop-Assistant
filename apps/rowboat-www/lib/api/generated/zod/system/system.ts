@@ -16,7 +16,7 @@ export const GetHealthz200Response = zod
     status: zod
       .enum(["ok"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
   })
   .describe("Liveness probe response.");
@@ -42,7 +42,7 @@ export const GetReadyz200Response = zod
     status: zod
       .enum(["ready", "not_ready"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
   })
   .describe("Readiness probe response.");
@@ -72,7 +72,7 @@ export const GetConfig200Response = zod
     oauthClientId: zod
       .string()
       .describe(
-        "Pre-registered OAuth/OIDC client id. Empty means the desktop may fall back to dynamic registration.",
+        "Pre-registered OAuth\/OIDC client id. Empty means the desktop may fall back to dynamic registration.",
       ),
     oidcIssuerUrl: zod.string().describe("OIDC issuer the desktop signs into."),
     supabaseUrl: zod

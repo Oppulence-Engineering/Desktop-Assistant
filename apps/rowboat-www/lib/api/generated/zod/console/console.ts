@@ -427,7 +427,7 @@ export const ListConsoleResources200Response = zod
                         .nullish()
                         .describe("Optional selected graph node."),
                     })
-                    .describe("Opaque one-time OAuth state/session ticket."),
+                    .describe("Opaque one-time OAuth state\/session ticket."),
                 })
                 .describe("Saved graph view payload."),
             ]),
@@ -640,7 +640,7 @@ export const CreateConsoleResourceBody = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state/session ticket."),
+            .describe("Opaque one-time OAuth state\/session ticket."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -757,7 +757,7 @@ export const CreateConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state/session ticket."),
+            .describe("Opaque one-time OAuth state\/session ticket."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -874,7 +874,7 @@ export const CreateConsoleResource201Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state/session ticket."),
+            .describe("Opaque one-time OAuth state\/session ticket."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -1219,7 +1219,7 @@ export const GetConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state/session ticket."),
+            .describe("Opaque one-time OAuth state\/session ticket."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -1445,7 +1445,7 @@ export const PatchConsoleResourceBody = zod
                   .nullish()
                   .describe("Optional selected graph node."),
               })
-              .describe("Opaque one-time OAuth state/session ticket."),
+              .describe("Opaque one-time OAuth state\/session ticket."),
           })
           .describe("Saved graph view payload."),
       ])
@@ -1563,7 +1563,7 @@ export const PatchConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state/session ticket."),
+            .describe("Opaque one-time OAuth state\/session ticket."),
         })
         .describe("Saved graph view payload."),
     ]),

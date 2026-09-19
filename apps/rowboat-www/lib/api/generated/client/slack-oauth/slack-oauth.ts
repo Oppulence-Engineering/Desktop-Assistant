@@ -150,29 +150,10 @@ export const claimSlackOAuth = async (
   slackClaimRequest: SlackClaimRequest,
   options?: RequestInit,
 ): Promise<claimSlackOAuthResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getClaimSlackOAuthUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(slackClaimRequest),
   });
 
@@ -291,29 +272,10 @@ export const postSlackThreadReply = async (
   slackThreadPostRequest: SlackThreadPostRequest,
   options?: RequestInit,
 ): Promise<postSlackThreadReplyResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getPostSlackThreadReplyUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(slackThreadPostRequest),
   });
 
@@ -380,29 +342,10 @@ export const readSlackThread = async (
   slackThreadReadRequest: SlackThreadReadRequest,
   options?: RequestInit,
 ): Promise<readSlackThreadResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getReadSlackThreadUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(slackThreadReadRequest),
   });
 

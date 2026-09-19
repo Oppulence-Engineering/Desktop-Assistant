@@ -65,7 +65,7 @@ export const ListCommitments200Response = zod
             status: zod
               .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             text: zod.string().describe("Commitment text."),
             userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
@@ -343,7 +343,7 @@ export const ListRelationshipAttention200Response = zod
             status: zod
               .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             triggeringObjectRef: zod.string().describe("Triggering object."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Updated time."),
@@ -421,7 +421,7 @@ export const DecideRelationshipAttention200Response = zod
     status: zod
       .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     triggeringObjectRef: zod.string().describe("Triggering object."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Updated time."),
@@ -668,6 +668,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 categories: zod
                   .array(zod.string().describe("Category."))
                   .describe("Source-backed company categories."),
+                commitmentCount: zod
+                  .int()
+                  .optional()
+                  .describe("Commitments currently recorded on this relationship."),
                 companyDescription: zod
                   .string()
                   .optional()
@@ -685,6 +689,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .optional()
                   .describe("Citation URLs keyed by enriched company field."),
                 displayName: zod.string().describe("Human display name."),
+                emailThreadCount: zod
+                  .int()
+                  .optional()
+                  .describe("Observed email threads currently attached to this relationship."),
                 engagement: zod
                   .enum(["unknown", "increasing", "steady", "declining", "dormant"])
                   .describe("Direction of engagement."),
@@ -731,6 +739,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .int()
                   .optional()
                   .describe("Open queue actions for this relationship."),
+                peopleCount: zod
+                  .int()
+                  .optional()
+                  .describe("Active people currently attached to this relationship."),
                 primaryEmail: zod.string().optional().describe("Primary email address."),
                 projectedAt: zod.iso
                   .datetime({ offset: true })
@@ -758,7 +770,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 status: zod
                   .enum(["active", "dormant", "closed", "archived"])
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
                 summary: zod.string().optional().describe("Bounded relationship summary."),
               })
@@ -817,6 +829,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 categories: zod
                   .array(zod.string().describe("Category."))
                   .describe("Source-backed company categories."),
+                commitmentCount: zod
+                  .int()
+                  .optional()
+                  .describe("Commitments currently recorded on this relationship."),
                 companyDescription: zod
                   .string()
                   .optional()
@@ -834,6 +850,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .optional()
                   .describe("Citation URLs keyed by enriched company field."),
                 displayName: zod.string().describe("Human display name."),
+                emailThreadCount: zod
+                  .int()
+                  .optional()
+                  .describe("Observed email threads currently attached to this relationship."),
                 engagement: zod
                   .enum(["unknown", "increasing", "steady", "declining", "dormant"])
                   .describe("Direction of engagement."),
@@ -880,6 +900,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .int()
                   .optional()
                   .describe("Open queue actions for this relationship."),
+                peopleCount: zod
+                  .int()
+                  .optional()
+                  .describe("Active people currently attached to this relationship."),
                 primaryEmail: zod.string().optional().describe("Primary email address."),
                 projectedAt: zod.iso
                   .datetime({ offset: true })
@@ -907,7 +931,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 status: zod
                   .enum(["active", "dormant", "closed", "archived"])
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
                 summary: zod.string().optional().describe("Bounded relationship summary."),
               })
@@ -919,7 +943,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
             status: zod
               .enum(["pending", "deferred", "resolving", "resolved", "undone"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             version: zod.int().describe("Optimistic version."),
           })
@@ -1018,6 +1042,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1032,6 +1060,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1066,6 +1098,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1091,7 +1127,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1148,6 +1184,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1162,6 +1202,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1196,6 +1240,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1221,7 +1269,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1233,7 +1281,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
     status: zod
       .enum(["pending", "deferred", "resolving", "resolved", "undone"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     version: zod.int().describe("Optimistic version."),
   })
@@ -1339,6 +1387,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1353,6 +1405,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1387,6 +1443,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1412,7 +1472,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1469,6 +1529,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1483,6 +1547,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1517,6 +1585,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1542,7 +1614,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1554,7 +1626,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
     status: zod
       .enum(["pending", "deferred", "resolving", "resolved", "undone"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     version: zod.int().describe("Optimistic version."),
   })
@@ -1829,7 +1901,7 @@ export const IngestRelationshipObservations409Response = zod
  * @summary Approve a recommendation
  */
 export const ApproveRelationshipRecommendationParams = zod.object({
-  actionId: zod.uuid().describe("Recommendation/action id."),
+  actionId: zod.uuid().describe("Recommendation\/action id."),
 });
 
 export const ApproveRelationshipRecommendationBody = zod
@@ -2000,7 +2072,7 @@ export const ApproveRelationshipRecommendation409Response = zod
  * @summary Reject a recommendation
  */
 export const RejectRelationshipRecommendationParams = zod.object({
-  actionId: zod.uuid().describe("Recommendation/action id."),
+  actionId: zod.uuid().describe("Recommendation\/action id."),
 });
 
 export const RejectRelationshipRecommendationBody = zod
@@ -2285,7 +2357,7 @@ export const GetRelationshipSourceInventory200Response = zod
                         "disconnected",
                       ])
                       .describe(
-                        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                       ),
                     syncStartedAt: zod.iso
                       .datetime({ offset: true })
@@ -2319,7 +2391,7 @@ export const GetRelationshipSourceInventory200Response = zod
               .describe("Progressive action scopes."),
           })
           .describe(
-            "Guided source card with consent explanation, supported evidence/actions, and every connected account.",
+            "Guided source card with consent explanation, supported evidence\/actions, and every connected account.",
           ),
       )
       .describe("Source cards."),
@@ -2432,7 +2504,7 @@ export const GetRelationshipSourceStatuses200Response = zod
                 "disconnected",
               ])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
           })
@@ -2555,7 +2627,7 @@ export const ReportRelationshipSourceAuthorization200Response = zod
         "disconnected",
       ])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
   })
@@ -2694,7 +2766,7 @@ export const ResyncRelationshipSource202Response = zod
         "disconnected",
       ])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
   })
@@ -2828,7 +2900,7 @@ export const DisconnectRelationshipSource200Response = zod
         "disconnected",
       ])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
   })
@@ -2902,6 +2974,10 @@ export const ListRelationships200Response = zod
             categories: zod
               .array(zod.string().describe("Category."))
               .describe("Source-backed company categories."),
+            commitmentCount: zod
+              .int()
+              .optional()
+              .describe("Commitments currently recorded on this relationship."),
             companyDescription: zod
               .string()
               .optional()
@@ -2919,6 +2995,10 @@ export const ListRelationships200Response = zod
               .optional()
               .describe("Citation URLs keyed by enriched company field."),
             displayName: zod.string().describe("Human display name."),
+            emailThreadCount: zod
+              .int()
+              .optional()
+              .describe("Observed email threads currently attached to this relationship."),
             engagement: zod
               .enum(["unknown", "increasing", "steady", "declining", "dormant"])
               .describe("Direction of engagement."),
@@ -2959,6 +3039,10 @@ export const ListRelationships200Response = zod
               .nullish()
               .describe("Next planned action."),
             openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+            peopleCount: zod
+              .int()
+              .optional()
+              .describe("Active people currently attached to this relationship."),
             primaryEmail: zod.string().optional().describe("Primary email address."),
             projectedAt: zod.iso
               .datetime({ offset: true })
@@ -2986,7 +3070,7 @@ export const ListRelationships200Response = zod
             status: zod
               .enum(["active", "dormant", "closed", "archived"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             summary: zod.string().optional().describe("Bounded relationship summary."),
           })
@@ -3036,6 +3120,10 @@ export const CreateRelationship201Response = zod
     categories: zod
       .array(zod.string().describe("Category."))
       .describe("Source-backed company categories."),
+    commitmentCount: zod
+      .int()
+      .optional()
+      .describe("Commitments currently recorded on this relationship."),
     companyDescription: zod.string().optional().describe("Source-backed company description."),
     companyEnrichedAt: zod.iso
       .datetime({ offset: true })
@@ -3050,6 +3138,10 @@ export const CreateRelationship201Response = zod
       .optional()
       .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
+    emailThreadCount: zod
+      .int()
+      .optional()
+      .describe("Observed email threads currently attached to this relationship."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
       .describe("Direction of engagement."),
@@ -3084,6 +3176,10 @@ export const CreateRelationship201Response = zod
     nextAction: zod.string().optional().describe("Recommended next action."),
     nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
     openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+    peopleCount: zod
+      .int()
+      .optional()
+      .describe("Active people currently attached to this relationship."),
     primaryEmail: zod.string().optional().describe("Primary email address."),
     projectedAt: zod.iso
       .datetime({ offset: true })
@@ -3109,7 +3205,7 @@ export const CreateRelationship201Response = zod
     status: zod
       .enum(["active", "dormant", "closed", "archived"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     summary: zod.string().optional().describe("Bounded relationship summary."),
   })
@@ -3308,7 +3404,7 @@ export const GetRelationshipGraph200Response = zod
               .string()
               .optional()
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             summary: zod.string().optional().describe("Evidence-backed summary."),
             updatedAt: zod.iso
@@ -3577,7 +3673,7 @@ export const GetRelationship200Response = zod
             status: zod
               .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
               .describe(
-                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
             text: zod.string().describe("Commitment text."),
             userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
@@ -3648,7 +3744,7 @@ export const GetRelationship200Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -3687,7 +3783,7 @@ export const GetRelationship200Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
+            "Credit delta. Negative values consume\/reserve credits; positive values grant or refund credits.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -3746,7 +3842,7 @@ export const GetRelationship200Response = zod
           .describe("Transcript governance receipts."),
         liveCues: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Cue card."))
-          .describe("Account-history cue cards for the next/live meeting."),
+          .describe("Account-history cue cards for the next\/live meeting."),
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
@@ -3799,7 +3895,7 @@ export const GetRelationship200Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
               })
               .describe(
@@ -4127,6 +4223,10 @@ export const GetRelationship200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -4141,6 +4241,10 @@ export const GetRelationship200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -4175,6 +4279,10 @@ export const GetRelationship200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -4200,7 +4308,7 @@ export const GetRelationship200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -4348,6 +4456,10 @@ export const RetractRelationshipAssertion200Response = zod
     categories: zod
       .array(zod.string().describe("Category."))
       .describe("Source-backed company categories."),
+    commitmentCount: zod
+      .int()
+      .optional()
+      .describe("Commitments currently recorded on this relationship."),
     companyDescription: zod.string().optional().describe("Source-backed company description."),
     companyEnrichedAt: zod.iso
       .datetime({ offset: true })
@@ -4362,6 +4474,10 @@ export const RetractRelationshipAssertion200Response = zod
       .optional()
       .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
+    emailThreadCount: zod
+      .int()
+      .optional()
+      .describe("Observed email threads currently attached to this relationship."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
       .describe("Direction of engagement."),
@@ -4396,6 +4512,10 @@ export const RetractRelationshipAssertion200Response = zod
     nextAction: zod.string().optional().describe("Recommended next action."),
     nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
     openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+    peopleCount: zod
+      .int()
+      .optional()
+      .describe("Active people currently attached to this relationship."),
     primaryEmail: zod.string().optional().describe("Primary email address."),
     projectedAt: zod.iso
       .datetime({ offset: true })
@@ -4421,7 +4541,7 @@ export const RetractRelationshipAssertion200Response = zod
     status: zod
       .enum(["active", "dormant", "closed", "archived"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     summary: zod.string().optional().describe("Bounded relationship summary."),
   })
@@ -4519,7 +4639,7 @@ export const GetRelationshipChanges200Response = zod
             projectorVersion: zod.int().describe("Projector version used for this snapshot."),
             state: zod
               .record(zod.string(), zod.unknown())
-              .describe("Opaque one-time OAuth state/session ticket."),
+              .describe("Opaque one-time OAuth state\/session ticket."),
             stateHash: zod
               .string()
               .describe("Stable hash of canonical state and winning assertions."),
@@ -4869,7 +4989,7 @@ export const AppendCommitmentTransition200Response = zod
     status: zod
       .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     text: zod.string().describe("Commitment text."),
     userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
@@ -4936,6 +5056,98 @@ export const AppendCommitmentTransition409Response = zod
   })
   .describe(
     "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+/**
+ * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+ * @summary Get communication timeline
+ */
+export const GetRelationshipCommunicationTimelineParams = zod.object({
+  relationshipId: zod.uuid().describe("Relationship id."),
+});
+
+export const GetRelationshipCommunicationTimelineQueryParams = zod.object({
+  limit: zod.coerce.number().int().optional().describe("Maximum items (1-100)."),
+  before: zod.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe("Return items before this RFC3339 timestamp."),
+});
+
+export const GetRelationshipCommunicationTimeline200Response = zod
+  .strictObject({
+    hasMore: zod.boolean().describe("More pages exist."),
+    items: zod
+      .array(
+        zod
+          .strictObject({
+            access: zod
+              .strictObject({
+                attachments: zod.boolean().describe("Attachment visibility."),
+                body: zod.boolean().describe("Body visibility."),
+                metadata: zod.boolean().describe("Metadata visibility."),
+                policyVersion: zod.int().optional().describe("Policy version."),
+                protected: zod.boolean().optional().describe("Protected recipient match."),
+                reason: zod
+                  .enum([
+                    "llm_call",
+                    "llm_call_reserve",
+                    "llm_settle",
+                    "voice_tts",
+                    "exa_search",
+                    "grant",
+                    "refund",
+                  ])
+                  .describe("Reason code for the ledger entry."),
+                subject: zod.boolean().describe("Subject visibility."),
+              })
+              .describe("Authorized communication fields for one actor."),
+            attachmentCount: zod.int().optional().describe("Attachment count."),
+            bodyLocked: zod.boolean().describe("Whether the body remains locked."),
+            direction: zod.string().optional().describe("Direction."),
+            id: zod.uuid().describe("Stable UUID primary key."),
+            interactionType: zod.enum(["email", "meeting"]).describe("Interaction kind."),
+            occurredAt: zod.iso.datetime({ offset: true }).describe("When it occurred."),
+            ownerId: zod.uuid().describe("Mailbox owner."),
+            source: zod.enum(["gmail", "calendar"]).describe("Provider source."),
+            subject: zod.string().optional().describe("Redacted subject."),
+            visibility: zod.enum(["private", "metadata", "full"]).describe("Stored visibility."),
+          })
+          .describe("One redacted communication metadata row."),
+      )
+      .describe("Timeline items."),
+    nextBefore: zod.iso.datetime({ offset: true }).nullish().describe("Cursor for the next page."),
+  })
+  .describe("Paginated communication timeline.");
+
+export const GetRelationshipCommunicationTimeline401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetRelationshipCommunicationTimeline404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
 /**
@@ -5100,7 +5312,7 @@ export const CorrectConversationEvidence201Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -5139,7 +5351,7 @@ export const CorrectConversationEvidence201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
+            "Credit delta. Negative values consume\/reserve credits; positive values grant or refund credits.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -5198,7 +5410,7 @@ export const CorrectConversationEvidence201Response = zod
           .describe("Transcript governance receipts."),
         liveCues: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Cue card."))
-          .describe("Account-history cue cards for the next/live meeting."),
+          .describe("Account-history cue cards for the next\/live meeting."),
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
@@ -5251,7 +5463,7 @@ export const CorrectConversationEvidence201Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
               })
               .describe(
@@ -5269,6 +5481,10 @@ export const CorrectConversationEvidence201Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -5283,6 +5499,10 @@ export const CorrectConversationEvidence201Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -5317,6 +5537,10 @@ export const CorrectConversationEvidence201Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -5342,7 +5566,7 @@ export const CorrectConversationEvidence201Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -5482,7 +5706,7 @@ export const DecideConversationChange201Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -5521,7 +5745,7 @@ export const DecideConversationChange201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
+            "Credit delta. Negative values consume\/reserve credits; positive values grant or refund credits.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -5580,7 +5804,7 @@ export const DecideConversationChange201Response = zod
           .describe("Transcript governance receipts."),
         liveCues: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Cue card."))
-          .describe("Account-history cue cards for the next/live meeting."),
+          .describe("Account-history cue cards for the next\/live meeting."),
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
@@ -5633,7 +5857,7 @@ export const DecideConversationChange201Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
                   ),
               })
               .describe(
@@ -5651,6 +5875,10 @@ export const DecideConversationChange201Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -5665,6 +5893,10 @@ export const DecideConversationChange201Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -5699,6 +5931,10 @@ export const DecideConversationChange201Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -5724,7 +5960,7 @@ export const DecideConversationChange201Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -5823,7 +6059,7 @@ export const RequestConversationDeletion202Response = zod
     status: zod
       .enum(["pending", "blocked", "partial", "verified"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     targets: zod
       .array(
@@ -6067,6 +6303,10 @@ export const CorrectRelationship201Response = zod
     categories: zod
       .array(zod.string().describe("Category."))
       .describe("Source-backed company categories."),
+    commitmentCount: zod
+      .int()
+      .optional()
+      .describe("Commitments currently recorded on this relationship."),
     companyDescription: zod.string().optional().describe("Source-backed company description."),
     companyEnrichedAt: zod.iso
       .datetime({ offset: true })
@@ -6081,6 +6321,10 @@ export const CorrectRelationship201Response = zod
       .optional()
       .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
+    emailThreadCount: zod
+      .int()
+      .optional()
+      .describe("Observed email threads currently attached to this relationship."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
       .describe("Direction of engagement."),
@@ -6115,6 +6359,10 @@ export const CorrectRelationship201Response = zod
     nextAction: zod.string().optional().describe("Recommended next action."),
     nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
     openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+    peopleCount: zod
+      .int()
+      .optional()
+      .describe("Active people currently attached to this relationship."),
     primaryEmail: zod.string().optional().describe("Primary email address."),
     projectedAt: zod.iso
       .datetime({ offset: true })
@@ -6140,7 +6388,7 @@ export const CorrectRelationship201Response = zod
     status: zod
       .enum(["active", "dormant", "closed", "archived"])
       .describe(
-        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
     summary: zod.string().optional().describe("Bounded relationship summary."),
   })
@@ -6601,6 +6849,171 @@ export const GetRelationshipTimeline401Response = zod
   );
 
 export const GetRelationshipTimeline404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns one scanned text attachment when policy and grants allow it.
+ * @summary Get authorized attachment content
+ */
+export const GetCommunicationAttachmentContentParams = zod.object({
+  attachmentId: zod.uuid().describe("Attachment id."),
+});
+
+export const GetCommunicationAttachmentContent200Response = zod
+  .strictObject({
+    access: zod
+      .strictObject({
+        attachments: zod.boolean().describe("Attachment visibility."),
+        body: zod.boolean().describe("Body visibility."),
+        metadata: zod.boolean().describe("Metadata visibility."),
+        policyVersion: zod.int().optional().describe("Policy version."),
+        protected: zod.boolean().optional().describe("Protected recipient match."),
+        reason: zod
+          .enum([
+            "llm_call",
+            "llm_call_reserve",
+            "llm_settle",
+            "voice_tts",
+            "exa_search",
+            "grant",
+            "refund",
+          ])
+          .describe("Reason code for the ledger entry."),
+        subject: zod.boolean().describe("Subject visibility."),
+      })
+      .optional()
+      .describe("Authorized communication fields for one actor."),
+    content: zod.string().optional().describe("UTF-8 content."),
+    filename: zod.string().optional().describe("Filename."),
+    mimeType: zod.string().optional().describe("MIME type."),
+    scanStatus: zod.string().optional().describe("Scan status."),
+  })
+  .describe("Attachment result.");
+
+export const GetCommunicationAttachmentContent401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetCommunicationAttachmentContent403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetCommunicationAttachmentContent404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns the plain-text body for one interaction when policy and grants allow it.
+ * @summary Get authorized communication body
+ */
+export const GetCommunicationInteractionBodyParams = zod.object({
+  interactionId: zod.uuid().describe("Interaction id."),
+});
+
+export const GetCommunicationInteractionBody200Response = zod
+  .strictObject({
+    access: zod
+      .strictObject({
+        attachments: zod.boolean().describe("Attachment visibility."),
+        body: zod.boolean().describe("Body visibility."),
+        metadata: zod.boolean().describe("Metadata visibility."),
+        policyVersion: zod.int().optional().describe("Policy version."),
+        protected: zod.boolean().optional().describe("Protected recipient match."),
+        reason: zod
+          .enum([
+            "llm_call",
+            "llm_call_reserve",
+            "llm_settle",
+            "voice_tts",
+            "exa_search",
+            "grant",
+            "refund",
+          ])
+          .describe("Reason code for the ledger entry."),
+        subject: zod.boolean().describe("Subject visibility."),
+      })
+      .optional()
+      .describe("Authorized communication fields for one actor."),
+    body: zod.string().optional().describe("Plain-text body."),
+  })
+  .describe("Body result.");
+
+export const GetCommunicationInteractionBody401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetCommunicationInteractionBody403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetCommunicationInteractionBody404Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

@@ -12,7 +12,9 @@ import * as zod from "zod";
  * @summary Handle Slack OAuth callback
  */
 export const HandleSlackOAuthCallbackQueryParams = zod.object({
-  state: zod.string().describe("Opaque user-bound state ticket minted by /v1/slack-oauth/start."),
+  state: zod
+    .string()
+    .describe("Opaque user-bound state ticket minted by \/v1\/slack-oauth\/start."),
   code: zod.string().optional().describe("Authorization code returned by Slack."),
   error: zod
     .string()
@@ -32,7 +34,7 @@ export const ClaimSlackOAuthBody = zod
   .strictObject({
     session: zod
       .string()
-      .describe("State ticket from the solomon-ai://oauth/slack/done deep link."),
+      .describe("State ticket from the solomon-ai:\/\/oauth\/slack\/done deep link."),
   })
   .describe("Slack install session ticket redemption.");
 
@@ -213,7 +215,7 @@ export const StartSlackOAuth502Response = zod
 export const PostSlackThreadReplyBody = zod
   .strictObject({
     channel: zod.string().describe("Slack channel id."),
-    teamId: zod.string().describe("Slack workspace/team id."),
+    teamId: zod.string().describe("Slack workspace\/team id."),
     text: zod.string().describe("Slack message text to post."),
     threadTs: zod
       .string()
@@ -225,7 +227,7 @@ export const PostSlackThreadReply200Response = zod
   .strictObject({
     channel: zod.string().describe("Slack channel id."),
     ok: zod.boolean().describe("Whether Slack accepted the post."),
-    teamId: zod.string().describe("Slack workspace/team id."),
+    teamId: zod.string().describe("Slack workspace\/team id."),
     threadTs: zod.string().describe("Slack thread timestamp."),
   })
   .describe("Slack reply post result. The bot token and message text are never returned.");
@@ -313,7 +315,7 @@ export const ReadSlackThreadBody = zod
   .strictObject({
     channel: zod.string().describe("Slack channel id."),
     limit: zod.int().nullish().describe("Max messages to return. Defaults to 50, max 200."),
-    teamId: zod.string().describe("Slack workspace/team id."),
+    teamId: zod.string().describe("Slack workspace\/team id."),
     threadTs: zod
       .string()
       .describe("Slack thread timestamp. For a top-level message, use the message ts."),
@@ -335,7 +337,7 @@ export const ReadSlackThread200Response = zod
           .describe("Slack thread message metadata returned to desktop chat."),
       )
       .describe("Slack thread messages."),
-    teamId: zod.string().describe("Slack workspace/team id."),
+    teamId: zod.string().describe("Slack workspace\/team id."),
     threadTs: zod.string().describe("Slack thread timestamp."),
   })
   .describe("Slack thread messages read through the server-held Slack app token.");
@@ -483,7 +485,7 @@ export const ListSlackWorkspaces500Response = zod
  * @summary Disconnect Slack workspace
  */
 export const DeleteSlackWorkspaceParams = zod.object({
-  teamId: zod.string().describe("Slack workspace/team id."),
+  teamId: zod.string().describe("Slack workspace\/team id."),
 });
 
 export const DeleteSlackWorkspace204Response = zod.void();

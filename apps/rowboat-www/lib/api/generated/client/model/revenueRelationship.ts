@@ -22,6 +22,8 @@ export interface RevenueRelationship {
   accountDomain?: string;
   /** Source-backed company categories. */
   categories: string[];
+  /** Commitments currently recorded on this relationship. */
+  commitmentCount?: number;
   /** Source-backed company description. */
   companyDescription?: string;
   /**
@@ -35,6 +37,8 @@ export interface RevenueRelationship {
   companyEnrichmentRefs?: RevenueRelationshipCompanyEnrichmentRefs;
   /** Human display name. */
   displayName: string;
+  /** Observed email threads currently attached to this relationship. */
+  emailThreadCount?: number;
   /** Direction of engagement. */
   engagement: RevenueRelationshipEngagement;
   /** Explainable health state; never a magic score. */
@@ -68,6 +72,8 @@ export interface RevenueRelationship {
   nextActionAt?: string | null;
   /** Open queue actions for this relationship. */
   openActions?: number;
+  /** Active people currently attached to this relationship. */
+  peopleCount?: number;
   /** Primary email address. */
   primaryEmail?: string;
   /**
