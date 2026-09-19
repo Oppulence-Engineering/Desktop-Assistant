@@ -52,6 +52,11 @@ export class ConsoleAPIError extends Error {
   }
 }
 
+/** Console routes are newer than some deployed rowboat-api builds. */
+export function isConsoleRouteUnavailable(error: unknown): boolean {
+  return error instanceof ConsoleAPIError && error.status === 404;
+}
+
 const ConsoleErrorBodySchema = z.object({
   code: z.string().optional(),
   detail: z.string().optional(),
@@ -111,19 +116,41 @@ export const patchConsolePreferences = (input: ConsolePreferencesPatch, signal?:
     signal,
   }).then((preferences) => SyncedConsolePreferencesSchema.parse(preferences));
 
-export const listConsoleResources = (kind: ConsoleResourceKind, signal?: AbortSignal) => {
+export const listConsoleResources = async (kind: ConsoleResourceKind, signal?: AbortSignal) => {
   const params = new URLSearchParams({ kind, limit: "100", offset: "0" });
-  return request(`/console/resources?${params.toString()}`, ListConsoleResources200Response, {
-    signal,
-  }).then((page) => page.resources);
+  try {
+    return await request(
+      `/console/resources?${params.toString()}`,
+      ListConsoleResources200Response,
+      {
+        signal,
+      },
+    ).then((page) => page.resources);
+  } catch (error) {
+    // Notes favorites/templates are optional until the console API is deployed.
+    if (isConsoleRouteUnavailable(error)) return [];
+    throw error;
+  }
 };
 
-export const createConsoleResource = (input: ConsoleResourceCreate, signal?: AbortSignal) =>
-  request("/console/resources", CreateConsoleResource201Response, {
-    body: JSON.stringify(CreateConsoleResourceBody.parse(input)),
-    method: "POST",
-    signal,
-  });
+export const createConsoleResource = async (input: ConsoleResourceCreate, signal?: AbortSignal) => {
+  try {
+    return await request("/console/resources", CreateConsoleResource201Response, {
+      body: JSON.stringify(CreateConsoleResourceBody.parse(input)),
+      method: "POST",
+      signal,
+    });
+  } catch (error) {
+    if (isConsoleRouteUnavailable(error)) {
+      throw new ConsoleAPIError(
+        "Favorites and templates need a rowboat-api build that includes /v1/console.",
+        404,
+        "console_unavailable",
+      );
+    }
+    throw error;
+  }
+};
 
 export const patchConsoleResource = (
   resourceId: string,

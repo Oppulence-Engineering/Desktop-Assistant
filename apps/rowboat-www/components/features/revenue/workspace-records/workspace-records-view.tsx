@@ -11,7 +11,6 @@ import {
   BookmarkSimple,
   CalendarBlank,
   CaretDown,
-  CheckSquare,
   DotsThree,
   Funnel,
   GridFour,
@@ -54,7 +53,6 @@ import {
 import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { Switch } from "@oppulence/ui/components/switch";
 import {
   TableBody,
   TableCell,
@@ -102,7 +100,6 @@ import {
 } from "@/lib/console";
 import { noteFavorites, noteTemplates, type NoteTemplateResource } from "@/lib/console-resources";
 import {
-  createAction,
   createRelationship,
   dismissAction,
   getPersonAttributes,
@@ -121,6 +118,7 @@ import type {
   RevenueAction,
   RevenueRelationship,
 } from "@/types/revenue";
+import { TaskCreateDialog } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
 
 type ViewProps = {
   onError: (message: string) => void;
@@ -1581,10 +1579,11 @@ export function TasksView({ onError, onNotice }: ViewProps) {
         </ul>
       )}
       {creating ? (
-        <TaskDialog
+        <TaskCreateDialog
+          open
           relationships={relationships}
-          onClose={() => setCreating(false)}
           onError={onError}
+          onOpenChange={setCreating}
           onSaved={() => {
             onNotice("Task created.");
             void load();
@@ -1592,179 +1591,5 @@ export function TasksView({ onError, onNotice }: ViewProps) {
         />
       ) : null}
     </div>
-  );
-}
-
-function TaskDialog({
-  relationships,
-  onClose,
-  onSaved,
-  onError,
-}: {
-  relationships: RevenueRelationship[];
-  onClose: () => void;
-  onSaved: () => void;
-  onError: (message: string) => void;
-}) {
-  const [title, setTitle] = React.useState("");
-  const [relationshipId, setRelationshipId] = React.useState("");
-  const [dueDate, setDueDate] = React.useState(todayValue);
-  const [createMore, setCreateMore] = React.useState(false);
-  const [recordError, setRecordError] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
-  const submit = async () => {
-    if (!title.trim()) return;
-    if (!relationshipId) {
-      setRecordError(true);
-      return;
-    }
-    setBusy(true);
-    try {
-      await createAction({
-        relationshipId,
-        actionType: "follow_up_task",
-        channel: "task",
-        reason: title.trim(),
-        dueAt: new Date(`${dueDate}T17:00:00`).toISOString(),
-        priorityScore: 30,
-      });
-      onSaved();
-      if (createMore) {
-        setTitle("");
-        setRecordError(false);
-      } else onClose();
-    } catch (error) {
-      onError(errMessage(error, "Could not create the task."));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        showCloseButton={false}
-        className="top-9 h-auto w-[min(804px,calc(100vw-32px))] max-w-none translate-y-0 gap-0 overflow-hidden border-border bg-[#17181a] p-0 text-white shadow-2xl sm:max-w-none"
-      >
-        <DialogTitle className="sr-only">Create task</DialogTitle>
-        <div className="flex h-12 items-center justify-between border-b border-white/8 px-4">
-          <Label className="flex items-center gap-2 text-[14px] font-medium text-white/85">
-            <CheckSquare className="size-4" /> Create task
-          </Label>
-          <Button
-            aria-label="Close task"
-            type="button"
-            className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
-            size="icon-xs"
-            variant="ghost"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
-        <Textarea
-          aria-label="Task title"
-          className="min-h-[50px] resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[14px] text-white/85 shadow-none placeholder:text-white/55 focus-visible:ring-0"
-          placeholder="Schedule a demo with @Contact"
-          rows={1}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void submit();
-            }
-          }}
-        />
-        <div className="flex min-h-11 items-center justify-between gap-3 border-t border-white/8 px-4 py-1.5">
-          <div className="flex min-w-0 items-center gap-4 text-[13px] text-white/55">
-            <label
-              htmlFor="task-due-date"
-              className="relative flex cursor-pointer items-center gap-2 hover:text-white"
-            >
-              <CalendarBlank className="size-4" />
-              <Label className="font-normal">
-                {dueDate === todayValue()
-                  ? "Today"
-                  : new Date(`${dueDate}T12:00:00`).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-              </Label>
-              <input
-                id="task-due-date"
-                aria-label="Due date"
-                className="absolute inset-0 cursor-pointer opacity-0"
-                type="date"
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-              />
-            </label>
-            <Label className="flex items-center gap-2 font-normal">
-              <User className="size-4" /> Assigned to You
-            </Label>
-            <div
-              className={cn(
-                "relative flex items-center gap-2",
-                recordError ? "text-red-400" : "hover:text-white",
-              )}
-            >
-              <Link className="size-4" />
-              <Select
-                value={relationshipId || undefined}
-                onValueChange={(value) => {
-                  setRelationshipId(value);
-                  setRecordError(false);
-                }}
-              >
-                <SelectTrigger
-                  id="task-relationship"
-                  aria-label="Linked company"
-                  className="h-auto max-w-44 border-0 bg-transparent p-0 pr-4 text-[13px] shadow-none focus:ring-0"
-                >
-                  <SelectValue placeholder={recordError ? "Add a record to save" : "Add record"} />
-                </SelectTrigger>
-                <SelectContent className="app-shell rounded-none">
-                  {relationships.map((relationship) => (
-                    <SelectItem key={relationship.id} value={relationship.id}>
-                      {relationship.displayName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <CaretDown className="pointer-events-none absolute right-0 size-3" />
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 text-[13px]">
-            <div className="flex items-center gap-2 text-white/55">
-              <Switch
-                aria-label="Create more tasks after saving"
-                checked={createMore}
-                className="rounded-none data-[state=checked]:bg-[#3478f6]"
-                onCheckedChange={setCreateMore}
-              />
-              <Label className="font-normal text-white/55">Create more</Label>
-            </div>
-            <Button
-              type="button"
-              className="h-8 rounded-none px-2 text-white/80 hover:bg-white/5"
-              variant="ghost"
-              onClick={onClose}
-            >
-              Cancel{" "}
-              <kbd className="border border-white/10 px-1 text-[10px] text-white/55">ESC</kbd>
-            </Button>
-            <Button
-              type="button"
-              className="h-8 rounded-none bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
-              disabled={busy || !title.trim() || !dueDate}
-              onClick={() => void submit()}
-            >
-              {busy ? <Spinner className="size-4" /> : null}Save{" "}
-              <kbd className="border border-white/15 px-1 text-[10px]">↵</kbd>
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

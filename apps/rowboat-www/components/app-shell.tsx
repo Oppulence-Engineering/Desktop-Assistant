@@ -607,7 +607,13 @@ function SidebarNavItem({
   );
   if (href) {
     return (
-      <Button asChild className={classes} data-active={active ? "true" : undefined} data-sidebar-row variant="ghost">
+      <Button
+        asChild
+        className={classes}
+        data-active={active ? "true" : undefined}
+        data-sidebar-row
+        variant="ghost"
+      >
         <Link aria-current={active ? "page" : undefined} href={href}>
           {content}
         </Link>
@@ -674,7 +680,10 @@ const SIDEBAR_FOOTER_LINK =
 
 function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Label className="block px-2 pb-1 pt-3 text-[var(--text-caption,12px)] font-normal text-[var(--text-secondary)]" data-sidebar-section>
+    <Label
+      className="block px-2 pb-1 pt-3 text-[var(--text-caption,12px)] font-normal text-[var(--text-secondary)]"
+      data-sidebar-section
+    >
       {children}
     </Label>
   );
@@ -947,7 +956,10 @@ export function AppShellSidebar({
             ))}
           </nav>
         ) : (
-          <nav className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2 pt-3" data-sidebar-nav>
+          <nav
+            className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2 pt-3"
+            data-sidebar-nav
+          >
             <SidebarNavItem
               active={view === "chat" && !selected}
               label="Home"
@@ -980,11 +992,6 @@ export function AppShellSidebar({
               active={view === "revenue" && activeRevenueTab === "people"}
               label={REVENUE_TAB_LABELS.people}
               onClick={() => onNavigateRevenue?.("people")}
-            />
-            <SidebarNavItem
-              active={view === "revenue" && activeRevenueTab === "workspace"}
-              label={REVENUE_TAB_LABELS.workspace}
-              onClick={() => onNavigateRevenue?.("workspace")}
             />
             <SidebarSectionLabel>Workspace</SidebarSectionLabel>
             {groups.map((group) => (
@@ -1067,7 +1074,10 @@ export function AppShellSidebar({
             view === "settings" && "settings-rail-footer",
           )}
         >
-          <div className="flex flex-col gap-0.5 border-[var(--border)] border-t px-2 pt-2" data-sidebar-footer>
+          <div
+            className="flex flex-col gap-0.5 border-[var(--border)] border-t px-2 pt-2"
+            data-sidebar-footer
+          >
             <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
             {/* Help used to open the OpenAPI reference: an operator who clicked
                 it because a promise was missed landed on a route table. */}
@@ -1099,120 +1109,127 @@ export function AppShellSidebar({
             />
           </div>
 
-          <div className="relative z-10 mx-2 flex h-14 shrink-0 items-center border-[var(--border)] border-t" data-sidebar-account>
+          <div
+            className="relative z-10 mx-2 flex h-14 shrink-0 items-center border-[var(--border)] border-t"
+            data-sidebar-account
+          >
             <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="h-10 min-w-0 flex-1 justify-start gap-2.5 rounded-none px-2 text-left hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
-                type="button"
-                variant="ghost"
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="h-10 min-w-0 flex-1 justify-start gap-2.5 rounded-none px-2 text-left hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Avatar aria-hidden="true" className="size-6 rounded-none" size="sm">
+                    <AvatarFallback className="rounded-none border border-border bg-background-100 font-mono text-[11px] uppercase text-primary/60">
+                      {workspace.slice(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Label className="truncate text-[15px] font-normal text-primary">
+                    {workspace}
+                  </Label>
+                  {planLabel ? (
+                    <Badge
+                      className="shrink-0 bg-background-200 text-[12px] font-normal text-primary/55"
+                      variant="secondary"
+                    >
+                      {planLabel}
+                    </Badge>
+                  ) : null}
+                  <CaretUpDown className="ml-auto size-3.5 shrink-0 text-primary/40" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="app-shell w-[254px] rounded-lg"
+                container={overlayContainer}
+                side="top"
+                sideOffset={8}
               >
-                <Avatar aria-hidden="true" className="size-6 rounded-none" size="sm">
-                  <AvatarFallback className="rounded-none border border-border bg-background-100 font-mono text-[11px] uppercase text-primary/60">
-                    {workspace.slice(0, 1)}
-                  </AvatarFallback>
-                </Avatar>
-                <Label className="truncate text-[15px] font-normal text-primary">{workspace}</Label>
-                {planLabel ? (
-                  <Badge
-                    className="shrink-0 bg-background-200 text-[12px] font-normal text-primary/55"
-                    variant="secondary"
-                  >
-                    {planLabel}
-                  </Badge>
-                ) : null}
-                <CaretUpDown className="ml-auto size-3.5 shrink-0 text-primary/40" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="app-shell w-[254px] rounded-lg"
-              container={overlayContainer}
-              side="top"
-              sideOffset={8}
-            >
-              <DropdownMenuItem onSelect={() => onOpenSettings?.("overview")}>
-                <GearSix />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="px-2 py-1.5">
-                  <div className="truncate text-sm font-medium text-primary">{workspace}</div>
-                  <div className="truncate font-mono text-[11px] text-primary/50">{user.email}</div>
-                </div>
-              </DropdownMenuLabel>
-              {/* Sessions are reviewed in Settings > Security; this is the same
-                  surface the account menu in the screenshot opens. */}
-              <DropdownMenuItem onSelect={() => onOpenSettings?.("security")}>
-                <Stack />
-                Manage sessions
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  window.location.assign("/api/auth/logout");
-                }}
-              >
-                <SignOut />
-                Sign out
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
-                  Theme
+                <DropdownMenuItem onSelect={() => onOpenSettings?.("overview")}>
+                  <GearSix />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="px-2 py-1.5">
+                    <div className="truncate text-sm font-medium text-primary">{workspace}</div>
+                    <div className="truncate font-mono text-[11px] text-primary/50">
+                      {user.email}
+                    </div>
+                  </div>
                 </DropdownMenuLabel>
-                <DropdownMenuItem
-                  className={theme === "light" ? "bg-muted" : ""}
-                  onClick={() => handleTheme("light")}
-                >
-                  <Sun />
-                  Light
+                {/* Sessions are reviewed in Settings > Security; this is the same
+                  surface the account menu in the screenshot opens. */}
+                <DropdownMenuItem onSelect={() => onOpenSettings?.("security")}>
+                  <Stack />
+                  Manage sessions
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className={theme === "dark" ? "bg-muted" : ""}
-                  onClick={() => handleTheme("dark")}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    window.location.assign("/api/auth/logout");
+                  }}
                 >
-                  <Moon />
-                  Dark
+                  <SignOut />
+                  Sign out
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className={theme === "system" ? "bg-muted" : ""}
-                  onClick={() => handleTheme("system")}
-                >
-                  <Monitor />
-                  System
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
-                Workspaces
-              </DropdownMenuLabel>
-              <DropdownMenuItem className="gap-2" onSelect={(event) => event.preventDefault()}>
-                <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
-                  <AvatarImage
-                    alt=""
-                    className="scale-[1.85] object-contain dark:invert"
-                    src="/marketing/oppulence-icon.png"
-                  />
-                  <AvatarFallback className="rounded-none" />
-                </Avatar>
-                <Label className="truncate font-normal">{workspace}</Label>
-                <CheckCircle
-                  className="ml-auto size-4 shrink-0 text-oppulence-orange"
-                  weight="fill"
-                />
-                {planLabel ? (
-                  <Badge
-                    className="shrink-0 text-[10px] font-normal text-primary/60"
-                    variant="outline"
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
+                    Theme
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    className={theme === "light" ? "bg-muted" : ""}
+                    onClick={() => handleTheme("light")}
                   >
-                    {planLabel}
-                  </Badge>
-                ) : null}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    <Sun />
+                    Light
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={theme === "dark" ? "bg-muted" : ""}
+                    onClick={() => handleTheme("dark")}
+                  >
+                    <Moon />
+                    Dark
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={theme === "system" ? "bg-muted" : ""}
+                    onClick={() => handleTheme("system")}
+                  >
+                    <Monitor />
+                    System
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
+                  Workspaces
+                </DropdownMenuLabel>
+                <DropdownMenuItem className="gap-2" onSelect={(event) => event.preventDefault()}>
+                  <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
+                    <AvatarImage
+                      alt=""
+                      className="scale-[1.85] object-contain dark:invert"
+                      src="/marketing/oppulence-icon.png"
+                    />
+                    <AvatarFallback className="rounded-none" />
+                  </Avatar>
+                  <Label className="truncate font-normal">{workspace}</Label>
+                  <CheckCircle
+                    className="ml-auto size-4 shrink-0 text-oppulence-orange"
+                    weight="fill"
+                  />
+                  {planLabel ? (
+                    <Badge
+                      className="shrink-0 text-[10px] font-normal text-primary/60"
+                      variant="outline"
+                    >
+                      {planLabel}
+                    </Badge>
+                  ) : null}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
