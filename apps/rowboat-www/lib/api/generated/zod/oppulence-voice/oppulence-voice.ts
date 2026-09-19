@@ -347,7 +347,7 @@ export const GetCaptureArtifactStatus500Response = zod
 export const ListVoiceSyncItemsQueryParams = zod.object({
   collection: zod.string().optional().describe("Optional collection filter."),
   limit: zod.coerce.number().int().optional().describe("Page size (1-500)."),
-  cursor: zod.string().optional().describe("Opaque updated-at\/id checkpoint from next_cursor."),
+  cursor: zod.string().optional().describe("Opaque updated-at/id checkpoint from next_cursor."),
 });
 
 export const ListVoiceSyncItems200Response = zod

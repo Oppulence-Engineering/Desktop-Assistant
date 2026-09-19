@@ -37,7 +37,7 @@ export const ListAgentSessions200Response = zod
             status: zod
               .enum(["active", "paused", "completed", "failed", "canceled"])
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             title: zod.string().nullish().describe("Conversation title."),
             toolCalls: zod.int().describe("Cumulative tool calls."),
